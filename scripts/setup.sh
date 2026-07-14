@@ -5,15 +5,32 @@ cd "$(dirname "$0")/.."
 
 echo "==> angmatura setup"
 
+# Pick a package manager: prefer Bun, but fall back to npm if Bun isn't
+# available or doesn't actually run on this machine (e.g. some Raspberry Pi
+# / 32-bit userland setups where the official Bun binary fails with
+# "cannot execute: required file not found").
+PKG_RUNNER="bun"
+
 if ! command -v bun >/dev/null 2>&1; then
 	echo "==> Installing Bun"
-	curl -fsSL https://bun.sh/install | bash
+	curl -fsSL https://bun.sh/install | bash || true
 	# shellcheck disable=SC1090
-	source "$HOME/.bashrc"
+	source "$HOME/.bashrc" 2>/dev/null || true
 fi
 
-echo "==> Installing dependencies"
-bun install
+if command -v bun >/dev/null 2>&1 && bun --version >/dev/null 2>&1; then
+	PKG_RUNNER="bun"
+else
+	echo "!! Bun is not available or won't run on this system, falling back to npm."
+	PKG_RUNNER="npm"
+fi
+
+echo "==> Installing dependencies (using $PKG_RUNNER)"
+if [ "$PKG_RUNNER" = "bun" ]; then
+	bun install
+else
+	npm install
+fi
 
 if [ ! -f .env ]; then
 	echo "==> Creating .env from .env.example — edit it before deploying (GEMINI_API_KEY, ADMIN_PASSWORD)"
@@ -32,8 +49,12 @@ if ! command -v cloudflared >/dev/null 2>&1; then
 	echo "   https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/"
 fi
 
-echo "==> Building"
-bun run build
+echo "==> Building (using $PKG_RUNNER)"
+if [ "$PKG_RUNNER" = "bun" ]; then
+	bun run build
+else
+	npm run build
+fi
 
 echo "==> Starting with PM2"
 pm2 start ecosystem.config.cjs
