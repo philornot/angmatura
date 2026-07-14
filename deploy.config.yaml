@@ -1,0 +1,15 @@
+# Deploy configuration for the Raspberry Pi host.
+# scripts/setup.sh and scripts/deploy.sh both source this file.
+
+app_name: angmatura
+port: 3000
+
+# Directory on the Pi where this repo lives.
+deploy_dir: /home/pi/apps/angmatura
+
+# Cloudflare Tunnel (created once with `cloudflared tunnel create <name>`)
+tunnel_name: angmatura
+tunnel_hostname: angmatura.pl
+
+# Git branch to pull on deploy
+branch: main
