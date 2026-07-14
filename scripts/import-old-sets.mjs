@@ -108,7 +108,7 @@ let skippedSets = 0;
 
 const importAll = db.transaction((sets) => {
 	for (const s of sets) {
-		const slug = pick(s, 'slug', 'slug', null);
+		const slug = pick(s, 'originalSlug', 'original_slug', null) ?? pick(s, 'slug', 'slug', null);
 		const title = pick(s, 'title', 'title', null);
 		if (!slug || !title) {
 			console.warn('Pomijam zestaw bez slug/title:', s);
