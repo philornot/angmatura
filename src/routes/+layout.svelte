@@ -7,7 +7,7 @@
 <div class="shell">
 	<header class="masthead">
 		<a href="/" class="wordmark">
-			<span class="wordmark-main">angmatura</span><span class="wordmark-dot">.</span>
+			<span class="wordmark-main">angmatura</span>
 		</a>
 	</header>
 

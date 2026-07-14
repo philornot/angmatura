@@ -1,4 +1,4 @@
-# AngMatura — matura-prep app
+# angmatura — matura-prep app
 
 Aplikacja webowa do ćwiczenia trzech typów zadań z matury rozszerzonej z
 angielskiego: Key Word Transformations, gramatykalizacja i tłumaczenia.

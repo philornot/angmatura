@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>AngMatura — ćwiczenia z angielskiego na maturę</title>
+	<title>angmatura — ćwiczenia z angielskiego na maturę</title>
 </svelte:head>
 
 <div class="container">

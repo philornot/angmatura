@@ -61,7 +61,7 @@
 </script>
 
 <svelte:head>
-	<title>Sprawdź wygenerowany zestaw — AngMatura</title>
+	<title>Sprawdź wygenerowany zestaw — angmatura</title>
 </svelte:head>
 
 {#if ready}

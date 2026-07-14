@@ -46,7 +46,7 @@
 </script>
 
 <svelte:head>
-	<title>Powtórki — AngMatura</title>
+	<title>Powtórki — angmatura</title>
 </svelte:head>
 
 <div class="container page">

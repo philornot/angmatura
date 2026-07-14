@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Admin — AngMatura</title>
+	<title>Admin — angmatura</title>
 </svelte:head>
 
 <div class="container page">

@@ -65,7 +65,7 @@
 <svelte:window onpaste={handlePaste} />
 
 <svelte:head>
-	<title>Stwórz zestaw ze zdjęcia — AngMatura</title>
+	<title>Stwórz zestaw ze zdjęcia — angmatura</title>
 </svelte:head>
 
 <div class="container page">

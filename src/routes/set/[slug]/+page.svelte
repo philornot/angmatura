@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>{set.title} — AngMatura</title>
+	<title>{set.title} — angmatura</title>
 </svelte:head>
 
 <div class="container page">
