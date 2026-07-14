@@ -38,10 +38,6 @@
 		text-decoration: none;
 	}
 
-	.wordmark-dot {
-		color: var(--accent);
-	}
-
 	main {
 		flex: 1;
 		padding-bottom: 48px;
