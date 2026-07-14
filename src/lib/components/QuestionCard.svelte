@@ -145,7 +145,7 @@
 				<div class="feedback">
 					<div class="feedback-head">
 						<StatusIcon correct={result.isCorrect} />
-						<div>
+						<div style="flex: 1;">
 							{#if !result.isCorrect}
 								<p class="feedback-given">Twoja odpowiedź: <s>{result.given}</s></p>
 							{/if}
@@ -156,19 +156,25 @@
 								<p class="feedback-alt">lub: {result.alternativeAnswers.join(' / ')}</p>
 							{/if}
 						</div>
+						<!-- Przycisk "Wyjaśnij" pojawia się tylko gdy brak wyjaśnienia -->
+						{#if !result.explanation}
+							<button
+								type="button"
+								class="btn btn-outline btn-sm explain-btn"
+								onclick={requestExplanation}
+								disabled={explainLoading}
+							>
+								<!-- Ikona info (SVG inline) -->
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+								</svg>
+								{explainLoading ? 'Generuję…' : 'Wyjaśnij'}
+							</button>
+						{/if}
 					</div>
 
 					{#if result.explanation}
 						<p class="feedback-explanation">{result.explanation}</p>
-					{:else}
-						<button
-							type="button"
-							class="btn btn-ghost explain-btn"
-							onclick={requestExplanation}
-							disabled={explainLoading}
-						>
-							{explainLoading ? 'Generuję wyjaśnienie…' : 'Wyjaśnij'}
-						</button>
 					{/if}
 
 					<button type="button" class="btn btn-primary btn-block" onclick={() => onAdvance(result!.isCorrect)}>
@@ -289,6 +295,10 @@
 		align-items: flex-start;
 	}
 
+	.feedback-head > div:first-of-type {
+		flex: 1; /* aby tekst zajmował dostępną przestrzeń, a przycisk był z prawej */
+	}
+
 	.feedback-given {
 		font-size: 14px;
 		color: var(--incorrect);
@@ -313,7 +323,36 @@
 		padding: 10px 12px;
 	}
 
-	.explain-btn {
-		align-self: flex-start;
+	/* Styl przycisku "Wyjaśnij" – mniejszy, z obramowaniem */
+	.btn-outline {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: transparent;
+		border: 1px solid var(--muted);
+		color: var(--ink-soft);
+		padding: 4px 12px;
+		border-radius: var(--radius-sm);
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s, border-color 0.15s, color 0.15s;
+		white-space: nowrap;
+	}
+
+	.btn-outline:hover:not(:disabled) {
+		background: var(--paper);
+		border-color: var(--accent);
+		color: var(--accent-ink);
+	}
+
+	.btn-outline:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.btn-sm {
+		padding: 4px 10px;
+		font-size: 12px;
 	}
 </style>
