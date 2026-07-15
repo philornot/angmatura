@@ -46,6 +46,14 @@
 	function gapParts(q: QuestionPrompt) {
 		return q.sentence2WithGap.split('______');
 	}
+
+	function wordHint(q: QuestionPrompt) {
+		if (q.minWords && q.maxWords) {
+			return q.minWords === q.maxWords ? `${q.minWords} słowa` : `${q.minWords}–${q.maxWords} słów`;
+		}
+		if (q.maxWords) return `maks. ${q.maxWords} słów`;
+		return null;
+	}
 </script>
 
 <svelte:head>
@@ -103,6 +111,9 @@
 						autocapitalize="off"
 						spellcheck="false"
 					/>
+					{#if wordHint(q)}
+						<p class="word-hint">{wordHint(q)}</p>
+					{/if}
 				</li>
 			{/each}
 		</ol>
@@ -228,6 +239,12 @@
 		border-bottom: 2.5px solid var(--accent);
 		padding-bottom: 1px;
 		margin: 0 1px;
+	}
+
+	.word-hint {
+		font-size: 13px;
+		color: var(--muted);
+		margin-top: -6px;
 	}
 
 	.submit-btn {

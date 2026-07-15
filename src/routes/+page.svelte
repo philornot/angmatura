@@ -78,7 +78,7 @@
 	{/if}
 
 	<footer class="footer">
-		<a href="/create/ai" class="btn btn-ghost">+ Stwórz zestaw ze zdjęcia</a>
+		<a href="/create" class="btn btn-ghost">+ Stwórz nowy zestaw</a>
 	</footer>
 </div>
 

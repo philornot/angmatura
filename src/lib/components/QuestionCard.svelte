@@ -23,6 +23,7 @@
 	let hint: { firstLetter: string; wordCount: number } | null = $state(null);
 	let hintLoading = $state(false);
 	let explainLoading = $state(false);
+	let checkError = $state<string | null>(null);
 
 	let gapParts = $derived(question.sentence2WithGap.split('______'));
 	let wordHint = $derived(
@@ -38,13 +39,20 @@
 	async function check() {
 		if (!given.trim() || checking) return;
 		checking = true;
+		checkError = null;
 		try {
 			const res = await fetch(`/api/questions/${question.id}/check`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ given, deviceId })
 			});
+			if (!res.ok) throw new Error('bad response');
 			result = await res.json();
+		} catch {
+			// Surface the failure instead of silently doing nothing — otherwise
+			// tapping Sprawdź on a flaky connection looks like the button is
+			// simply unresponsive.
+			checkError = 'Nie udało się sprawdzić odpowiedzi. Spróbuj ponownie.';
 		} finally {
 			checking = false;
 		}
@@ -59,7 +67,11 @@
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ deviceId })
 			});
+			if (!res.ok) throw new Error('bad response');
 			hint = await res.json();
+		} catch {
+			// Silent failure here just means no hint appears — not worth a
+			// banner, but we still must not leave hintLoading stuck true.
 		} finally {
 			hintLoading = false;
 		}
@@ -131,6 +143,10 @@
 						Podpowiedź: zaczyna się na <strong>„{hint.firstLetter}”</strong> · {hint.wordCount}
 						{hint.wordCount === 1 ? 'słowo' : 'słowa/słów'}
 					</p>
+				{/if}
+
+				{#if checkError}
+					<p class="check-error">{checkError}</p>
 				{/if}
 
 				<div class="actions">
@@ -270,6 +286,14 @@
 		font-size: 14px;
 		color: var(--accent-ink);
 		background: var(--accent-soft);
+		padding: 8px 12px;
+		border-radius: var(--radius-sm);
+	}
+
+	.check-error {
+		font-size: 14px;
+		color: var(--incorrect);
+		background: var(--incorrect-soft);
 		padding: 8px 12px;
 		border-radius: var(--radius-sm);
 	}
