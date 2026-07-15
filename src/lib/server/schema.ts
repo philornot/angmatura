@@ -9,6 +9,7 @@ export function initSchema(db: Database.Database) {
 		CREATE TABLE IF NOT EXISTS sets (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			slug TEXT UNIQUE NOT NULL,
+			custom_slug TEXT UNIQUE,
 			title TEXT NOT NULL,
 			source_label TEXT,
 			type TEXT NOT NULL DEFAULT 'kwt', -- 'kwt' | 'grammar' | 'translation'
@@ -68,11 +69,16 @@ export function initSchema(db: Database.Database) {
 		CREATE INDEX IF NOT EXISTS idx_sets_type_public ON sets(type, is_public);
 	`);
 
-	// Safety net for databases created before `is_featured` existed — CREATE
-	// TABLE IF NOT EXISTS above won't add columns to an already-existing
-	// table, so add it here if missing (no-op on fresh databases).
+	// Safety net for databases created before `is_featured` / `custom_slug`
+	// existed — CREATE TABLE IF NOT EXISTS above won't add columns to an
+	// already-existing table, so add them here if missing (no-op on fresh
+	// databases).
 	const columns = db.prepare(`PRAGMA table_info(sets)`).all() as { name: string }[];
 	if (!columns.some((c) => c.name === 'is_featured')) {
 		db.exec(`ALTER TABLE sets ADD COLUMN is_featured INTEGER NOT NULL DEFAULT 0`);
+	}
+	if (!columns.some((c) => c.name === 'custom_slug')) {
+		db.exec(`ALTER TABLE sets ADD COLUMN custom_slug TEXT`);
+		db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sets_custom_slug ON sets(custom_slug)`);
 	}
 }

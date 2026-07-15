@@ -1,11 +1,11 @@
 import { error, redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getSetBySlug, updateSetMeta } from '$lib/server/repo/sets';
+import { getSetBySlugOrCustom, updateSetMeta } from '$lib/server/repo/sets';
 import { createSet } from '$lib/server/repo/sets';
 import { getQuestionsForSet, replaceQuestions, type NewQuestionInput } from '$lib/server/repo/questions';
 
 export const load: PageServerLoad = ({ params }) => {
-	const set = getSetBySlug(params.slug);
+	const set = getSetBySlugOrCustom(params.slug);
 	if (!set) error(404, 'Nie znaleziono zestawu.');
 
 	if (set.isPublic) {
@@ -29,7 +29,7 @@ export const load: PageServerLoad = ({ params }) => {
 
 export const actions: Actions = {
 	save: async ({ params, request }) => {
-		const set = getSetBySlug(params.slug);
+		const set = getSetBySlugOrCustom(params.slug);
 		if (!set) error(404, 'Nie znaleziono zestawu.');
 
 		const form = await request.formData();
@@ -50,8 +50,15 @@ export const actions: Actions = {
 			return fail(400, { message: 'Zestaw musi mieć przynajmniej jedno pytanie.' });
 		}
 
-		updateSetMeta(set.id, { title, sourceLabel, isPublic });
-		replaceQuestions(set.id, questions);
+		try {
+			updateSetMeta(set.id, { title, sourceLabel, isPublic });
+			replaceQuestions(set.id, questions);
+		} catch (err) {
+			console.error('Failed to save set', set.id, err);
+			return fail(500, {
+				message: 'Nie udało się zapisać zmian. Formularz nie został wyczyszczony — spróbuj ponownie.'
+			});
+		}
 
 		return { message: null, saved: true };
 	}

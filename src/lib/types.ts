@@ -4,6 +4,7 @@ export type SetType = 'kwt' | 'grammar' | 'translation';
 export interface SetSummary {
 	id: number;
 	slug: string;
+	customSlug: string | null;
 	title: string;
 	sourceLabel: string | null;
 	type: SetType;

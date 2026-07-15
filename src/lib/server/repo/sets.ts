@@ -1,10 +1,11 @@
 import { db } from '../db';
 import type { SetSummary, SetType } from '$lib/types';
-import { generateUniqueSlug } from './slug';
+import { generateUniqueSlug, isCustomSlugAvailable, normalizeCustomSlug } from './slug';
 
 interface SetRow {
 	id: number;
 	slug: string;
+	custom_slug: string | null;
 	title: string;
 	source_label: string | null;
 	type: SetType;
@@ -19,6 +20,7 @@ function toSummary(row: SetRow): SetSummary {
 	return {
 		id: row.id,
 		slug: row.slug,
+		customSlug: row.custom_slug,
 		title: row.title,
 		sourceLabel: row.source_label,
 		type: row.type,
@@ -54,8 +56,17 @@ export function getAllSets(): SetSummary[] {
 	return rows.map(toSummary);
 }
 
+/** Looks up a set by its permanent random slug only (used by /edit, which always operates on the canonical link). */
 export function getSetBySlug(slug: string): SetSummary | null {
 	const row = db.prepare(`${WITH_COUNT_SELECT} WHERE slug = ?`).get(slug) as SetRow | undefined;
+	return row ? toSummary(row) : null;
+}
+
+/** Looks up a set by either its permanent random slug OR its admin-assigned custom slug — both links resolve to the same set. */
+export function getSetBySlugOrCustom(slug: string): SetSummary | null {
+	const row = db
+		.prepare(`${WITH_COUNT_SELECT} WHERE slug = ? OR custom_slug = ?`)
+		.get(slug, slug) as SetRow | undefined;
 	return row ? toSummary(row) : null;
 }
 
@@ -74,7 +85,7 @@ export interface NewSetInput {
 }
 
 export function createSet(input: NewSetInput): SetSummary {
-	const slug = generateUniqueSlug(input.title);
+	const slug = generateUniqueSlug();
 	const result = db
 		.prepare(
 			`INSERT INTO sets (slug, title, source_label, type, is_public, is_featured, parent_slug)
@@ -105,6 +116,34 @@ export function updateSetMeta(
 		patch.isFeatured !== undefined ? (patch.isFeatured ? 1 : 0) : current.isFeatured ? 1 : 0,
 		id
 	);
+}
+
+export type SetCustomSlugResult =
+	| { ok: true; customSlug: string | null }
+	| { ok: false; error: 'not_public' | 'invalid' | 'taken' };
+
+/**
+ * Assigns (or clears, with `raw = null`) a custom link for a set. Only
+ * published (public) sets can have a custom link — an admin publishing a set
+ * later can still add one afterwards, but a private set cannot.
+ */
+export function setCustomSlug(id: number, raw: string | null): SetCustomSlugResult {
+	const current = getSetById(id);
+	if (!current) return { ok: false, error: 'invalid' };
+
+	if (raw === null || raw.trim() === '') {
+		db.prepare('UPDATE sets SET custom_slug = NULL WHERE id = ?').run(id);
+		return { ok: true, customSlug: null };
+	}
+
+	if (!current.isPublic) return { ok: false, error: 'not_public' };
+
+	const normalized = normalizeCustomSlug(raw);
+	if (!normalized) return { ok: false, error: 'invalid' };
+	if (!isCustomSlugAvailable(normalized, id)) return { ok: false, error: 'taken' };
+
+	db.prepare('UPDATE sets SET custom_slug = ? WHERE id = ?').run(normalized, id);
+	return { ok: true, customSlug: normalized };
 }
 
 export function deleteSet(id: number) {

@@ -148,12 +148,39 @@ export function updateQuestion(id: number, patch: Partial<NewQuestionInput>) {
 /** Replaces every question in a set with a new list — used by the manual editor, which
  *  works against a single in-memory array rather than diffing individual rows. */
 export function replaceQuestions(setId: number, questions: NewQuestionInput[]) {
+	// CRITICAL: delete + insert must happen in a single transaction. Previously
+	// the DELETE ran in its own transaction and insertQuestions() ran
+	// afterwards, unprotected. If insertQuestions() threw for any reason (bad
+	// row, constraint violation, etc.) the DELETE was already committed and
+	// the set was left with zero questions with no rollback — this is what
+	// caused "all fields disappear after saving" reports.
 	const del = db.prepare('DELETE FROM questions WHERE set_id = ?');
-	const run = db.transaction(() => {
+	const insert = db.prepare(
+		`INSERT INTO questions
+			(set_id, position, sentence1, sentence2_with_gap, keyword, correct_answer,
+			 alternative_answers, example_wrong_answers, explanation, grammar_tags, min_words, max_words)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	);
+	const run = db.transaction((items: NewQuestionInput[]) => {
 		del.run(setId);
+		items.forEach((q, index) => {
+			insert.run(
+				setId,
+				index,
+				q.sentence1 ?? '',
+				q.sentence2WithGap,
+				q.keyword ?? '',
+				q.correctAnswer,
+				JSON.stringify(q.alternativeAnswers ?? []),
+				JSON.stringify(q.exampleWrongAnswers ?? []),
+				q.explanation ?? null,
+				JSON.stringify(q.grammarTags ?? []),
+				q.minWords ?? 0,
+				q.maxWords ?? 0
+			);
+		});
 	});
-	run();
-	insertQuestions(setId, questions);
+	run(questions);
 }
 
 export function setExplanation(id: number, explanation: string) {

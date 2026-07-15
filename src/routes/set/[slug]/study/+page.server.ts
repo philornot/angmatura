@@ -1,10 +1,10 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getSetBySlug } from '$lib/server/repo/sets';
+import { getSetBySlugOrCustom } from '$lib/server/repo/sets';
 import { getQuestionsForSet, toPrompt } from '$lib/server/repo/questions';
 
 export const load: PageServerLoad = ({ params }) => {
-	const set = getSetBySlug(params.slug);
+	const set = getSetBySlugOrCustom(params.slug);
 	if (!set) error(404, 'Nie znaleziono zestawu.');
 
 	const questions = getQuestionsForSet(set.id).map(toPrompt);

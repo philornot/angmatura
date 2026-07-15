@@ -1,11 +1,11 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getSetBySlug } from '$lib/server/repo/sets';
+import { getSetBySlugOrCustom } from '$lib/server/repo/sets';
 import { getQuestionsForSet, toPrompt } from '$lib/server/repo/questions';
 import { submitExamAttempt } from '$lib/server/repo/attempts';
 
 export const load: PageServerLoad = ({ params }) => {
-	const set = getSetBySlug(params.slug);
+	const set = getSetBySlugOrCustom(params.slug);
 	if (!set) error(404, 'Nie znaleziono zestawu.');
 
 	const questions = getQuestionsForSet(set.id).map(toPrompt);
@@ -16,7 +16,7 @@ export const load: PageServerLoad = ({ params }) => {
 
 export const actions: Actions = {
 	default: async ({ params, request }) => {
-		const set = getSetBySlug(params.slug);
+		const set = getSetBySlugOrCustom(params.slug);
 		if (!set) error(404, 'Nie znaleziono zestawu.');
 
 		const form = await request.formData();

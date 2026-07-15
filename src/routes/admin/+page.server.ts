@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { env } from '$env/dynamic/private';
-import { getAllSets, updateSetMeta, deleteSet } from '$lib/server/repo/sets';
+import { getAllSets, updateSetMeta, deleteSet, setCustomSlug } from '$lib/server/repo/sets';
 
 const COOKIE_NAME = 'angmatura_admin';
 
@@ -59,6 +59,24 @@ export const actions: Actions = {
 		const isFeatured = form.get('isFeatured') === 'true';
 		updateSetMeta(id, { isFeatured: !isFeatured });
 		return { toggled: true };
+	},
+
+	setCustomSlug: async ({ request, cookies }) => {
+		if (!isAuthed(cookies)) return fail(401, { message: 'Zaloguj się ponownie.' });
+		const form = await request.formData();
+		const id = Number(form.get('id'));
+		const raw = String(form.get('customSlug') ?? '');
+
+		const result = setCustomSlug(id, raw.trim() === '' ? null : raw);
+		if (!result.ok) {
+			const messages: Record<typeof result.error, string> = {
+				not_public: 'Zestaw musi być najpierw opublikowany.',
+				invalid: 'Nieprawidłowy link — użyj liter, cyfr i myślników.',
+				taken: 'Ten link jest już zajęty przez inny zestaw.'
+			};
+			return fail(400, { message: messages[result.error] });
+		}
+		return { customSlugSet: true };
 	},
 
 	delete: async ({ request, cookies }) => {
