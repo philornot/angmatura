@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { QuestionPrompt, SetType } from '$lib/types';
+	import { ArrowLeft, X } from '@lucide/svelte';
 
 	let { data, form } = $props();
 	let set = $derived(data.set);
@@ -62,13 +63,13 @@
 
 <div class="container page">
 	<div class="top">
-		<a href="/set/{set.slug}" class="back">← {set.title}</a>
+		<a href="/set/{set.slug}" class="back"><ArrowLeft size={14} aria-hidden="true" /> {set.title}</a>
 		{#if timerVisible}
 			<div class="timer mono" class:urgent={secondsLeft <= 60}>
 				<span>{timeLabel}</span>
-				<button type="button" class="dismiss" onclick={() => (timerVisible = false)} aria-label="Ukryj timer"
-					>×</button
-				>
+				<button type="button" class="dismiss" onclick={() => (timerVisible = false)} aria-label="Ukryj timer">
+					<X size={14} aria-hidden="true" />
+				</button>
 			</div>
 		{/if}
 	</div>
@@ -145,6 +146,9 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;
@@ -167,10 +171,12 @@
 	}
 
 	.timer .dismiss {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		border: none;
 		background: none;
 		color: var(--muted);
-		font-size: 16px;
 		cursor: pointer;
 		line-height: 1;
 	}

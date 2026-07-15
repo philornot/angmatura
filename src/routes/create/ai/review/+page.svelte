@@ -4,6 +4,7 @@
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
 	import type { EditableQuestion } from '$lib/components/KwtQuestionEditor.svelte';
 	import type { AiGeneratedSet, SetType } from '$lib/types';
+	import { ArrowLeft, Plus } from '@lucide/svelte';
 
 	let { form } = $props();
 
@@ -66,7 +67,7 @@
 
 {#if ready}
 	<div class="container page">
-		<a href="/create/ai" class="back">← Wgraj inne zdjęcia</a>
+		<a href="/create/ai" class="back"><ArrowLeft size={14} aria-hidden="true" /> Wgraj inne zdjęcia</a>
 		<h1>Sprawdź wygenerowany zestaw</h1>
 		<p class="sub">AI wypisało {questions.length} pytań. Popraw literówki i dopisz warianty, jeśli trzeba.</p>
 
@@ -119,9 +120,9 @@
 				{/each}
 			</div>
 
-			<button type="button" class="btn btn-secondary btn-block" onclick={addQuestion}
-				>+ Dodaj pytanie ręcznie</button
-			>
+			<button type="button" class="btn btn-secondary btn-block" onclick={addQuestion}>
+				<Plus size={16} aria-hidden="true" /> Dodaj pytanie ręcznie
+			</button>
 
 			<input type="hidden" name="questions" value={JSON.stringify(questions)} />
 
@@ -141,6 +142,9 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;

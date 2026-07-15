@@ -3,6 +3,7 @@
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import { getDeviceId } from '$lib/deviceId';
 	import type { QuestionPrompt } from '$lib/types';
+	import { ArrowLeft, PartyPopper } from '@lucide/svelte';
 
 	let { data } = $props();
 	let set = $derived(data.set);
@@ -66,7 +67,7 @@
 <div class="container page">
 	{#if !roundFinished}
 		<div class="top">
-			<a href="/set/{set.slug}" class="back">← {set.title}</a>
+			<a href="/set/{set.slug}" class="back"><ArrowLeft size={14} aria-hidden="true" /> {set.title}</a>
 			<ProgressBar current={index + 1} total={queue.length} />
 		</div>
 
@@ -82,7 +83,7 @@
 		<div class="summary card">
 			{#if wrongIds.length === 0}
 				<p class="summary-eyebrow mono">runda {round}</p>
-				<h1>Zero błędów. 🎉</h1>
+				<h1 class="with-icon">Zero błędów. <PartyPopper size={22} aria-hidden="true" /></h1>
 				<p class="summary-sub">Ukończono {queue.length} {queue.length === 1 ? 'pytanie' : 'pytań'} bez pomyłki.</p>
 				<a href="/set/{set.slug}" class="btn btn-primary btn-block">Wróć do zestawu</a>
 			{:else}
@@ -115,9 +116,19 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;
+	}
+
+	.with-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
 	}
 
 	.summary {

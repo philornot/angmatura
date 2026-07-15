@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import type { SetType } from '$lib/types';
+	import { ChevronDown, X } from '@lucide/svelte';
 
 	export interface EditableQuestion {
 		sentence1: string;
@@ -64,7 +65,7 @@
 	<button type="button" class="editor-head" onclick={() => (expanded = !expanded)}>
 		<span class="index mono">#{index + 1}</span>
 		<span class="preview">{question.sentence2WithGap || 'Nowe pytanie'}</span>
-		<span class="chevron" class:open={expanded} aria-hidden="true">⌄</span>
+		<ChevronDown class={expanded ? 'chevron open' : 'chevron'} size={18} aria-hidden="true" />
 	</button>
 
 	{#if expanded}
@@ -97,9 +98,9 @@
 					{#each question.alternativeAnswers as alt, i (alt + i)}
 						<span class="chip">
 							{alt}
-							<button type="button" aria-label="Usuń wariant" onclick={() => removeAlternative(i)}
-								>×</button
-							>
+							<button type="button" aria-label="Usuń wariant" onclick={() => removeAlternative(i)}>
+								<X size={14} aria-hidden="true" />
+							</button>
 						</span>
 					{/each}
 				</div>
@@ -169,12 +170,12 @@
 		white-space: nowrap;
 	}
 
-	.chevron {
+	:global(.chevron) {
 		color: var(--muted);
 		transition: transform 0.15s ease;
 		flex-shrink: 0;
 	}
-	.chevron.open {
+	:global(.chevron.open) {
 		transform: rotate(180deg);
 	}
 
@@ -221,10 +222,12 @@
 	}
 
 	.chip button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		border: none;
 		background: none;
 		color: var(--muted);
-		font-size: 16px;
 		line-height: 1;
 		cursor: pointer;
 		padding: 2px;

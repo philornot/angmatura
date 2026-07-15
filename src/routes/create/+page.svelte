@@ -1,9 +1,13 @@
+<script lang="ts">
+	import { ArrowLeft } from '@lucide/svelte';
+</script>
+
 <svelte:head>
 	<title>Stwórz nowy zestaw — angmatura</title>
 </svelte:head>
 
 <div class="container page">
-	<a href="/" class="back">← Strona główna</a>
+	<a href="/" class="back"><ArrowLeft size={14} aria-hidden="true" /> Strona główna</a>
 	<h1>Stwórz nowy zestaw</h1>
 
 	<div class="options">
@@ -13,7 +17,7 @@
 		</a>
 		<a href="/create/manual" class="option-card card">
 			<h2>Ręcznie</h2>
-			<p>Wpisz zdania, luki i odpowiedzi samodzielnie, bez pomocy AI.</p>
+			<p>Wpisz zdania, luki i odpowiedzi samodzielnie.</p>
 		</a>
 	</div>
 </div>
@@ -27,6 +31,9 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
+	import { Star } from '@lucide/svelte';
 
 	let { data, form } = $props();
 </script>
@@ -33,7 +34,7 @@
 						<SetTypeBadge type={set.type} />
 						<span class="title">{set.title}</span>
 						{#if set.isFeatured}
-							<span class="featured-pill">★ Polecane</span>
+							<span class="featured-pill"><Star size={12} fill="currentColor" aria-hidden="true" /> Polecane</span>
 						{/if}
 						<span class="count mono">{set.questionCount} pytań</span>
 					</div>
@@ -148,6 +149,9 @@
 	}
 
 	.featured-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 11px;
 		font-weight: 700;
 		color: var(--accent-ink);

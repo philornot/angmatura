@@ -3,6 +3,7 @@
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import { getDeviceId } from '$lib/deviceId';
 	import type { QuestionPrompt, SetType } from '$lib/types';
+	import { ArrowLeft, PartyPopper } from '@lucide/svelte';
 
 	interface DueItem {
 		question: QuestionPrompt;
@@ -50,7 +51,7 @@
 </svelte:head>
 
 <div class="container page">
-	<a href="/" class="back">← Strona główna</a>
+	<a href="/" class="back"><ArrowLeft size={14} aria-hidden="true" /> Strona główna</a>
 
 	{#if loading}
 		<p class="empty">Ładowanie…</p>
@@ -62,7 +63,7 @@
 		</div>
 	{:else if done}
 		<div class="empty-state card">
-			<h1>Powtórki na dziś zrobione 🎉</h1>
+			<h1 class="with-icon">Powtórki na dziś zrobione <PartyPopper size={22} aria-hidden="true" /></h1>
 			<p>Wróć jutro — kolejne pytania będą czekać, gdy nadejdzie ich pora.</p>
 			<a href="/" class="btn btn-primary btn-block">Strona główna</a>
 		</div>
@@ -89,9 +90,19 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;
+	}
+
+	.with-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
 	}
 
 	.empty {

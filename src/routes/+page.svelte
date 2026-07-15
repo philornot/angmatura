@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
 	import type { SetType } from '$lib/types';
+	import { ArrowRight, Star, Plus } from '@lucide/svelte';
 
 	let { data } = $props();
 
@@ -24,13 +25,13 @@
 			<h1>Powtórz to, co Ci nie idzie</h1>
 			<p class="hero-sub">Kilka pytań z Twoich wcześniejszych błędów, dobranych automatycznie.</p>
 		</div>
-		<span class="hero-arrow" aria-hidden="true">→</span>
+		<ArrowRight class="hero-arrow" size={28} aria-hidden="true" />
 	</a>
 
 	{#if data.featured.length > 0}
 		<section class="section featured-section">
 			<div class="section-head">
-				<h2>★ Polecane</h2>
+				<h2 class="with-icon"><Star size={18} fill="currentColor" aria-hidden="true" /> Polecane</h2>
 			</div>
 			<ul class="set-list">
 				{#each data.featured as set (set.id)}
@@ -78,7 +79,7 @@
 	{/if}
 
 	<footer class="footer">
-		<a href="/create" class="btn btn-ghost">+ Stwórz nowy zestaw</a>
+		<a href="/create" class="btn btn-ghost"><Plus size={16} aria-hidden="true" /> Stwórz nowy zestaw</a>
 	</footer>
 </div>
 
@@ -125,9 +126,14 @@
 		max-width: 46ch;
 	}
 
-	.hero-arrow {
-		font-size: 28px;
+	:global(.hero-arrow) {
 		flex-shrink: 0;
+	}
+
+	.with-icon {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 	}
 
 	.section {

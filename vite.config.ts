@@ -21,5 +21,10 @@ export default defineConfig({
 	server: {
 		// Convenient for testing on a phone on the same LAN during development.
 		host: true
+	},
+	ssr: {
+		// Without this, Vite's dev SSR tries to load @lucide/svelte's .svelte
+		// files as plain Node modules and fails with ERR_UNKNOWN_FILE_EXTENSION.
+		noExternal: ['@lucide/svelte']
 	}
 });

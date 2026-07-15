@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
 	import type { EditableQuestion } from '$lib/components/KwtQuestionEditor.svelte';
+	import { ArrowLeft, Plus } from '@lucide/svelte';
 
 	let { data, form } = $props();
 	let set = $derived(data.set);
@@ -73,7 +74,7 @@
 </svelte:head>
 
 <div class="container page">
-	<a href="/set/{set.slug}" class="back">← {set.title}</a>
+	<a href="/set/{set.slug}" class="back"><ArrowLeft size={14} aria-hidden="true" /> {set.title}</a>
 	<h1>Edytuj zestaw</h1>
 	<p class="private-note">To Twoja prywatna kopia — zmiany nie dotyczą oryginału.</p>
 
@@ -116,7 +117,9 @@
 			{/each}
 		</div>
 
-		<button type="button" class="btn btn-secondary btn-block" onclick={addQuestion}>+ Dodaj pytanie</button>
+		<button type="button" class="btn btn-secondary btn-block" onclick={addQuestion}>
+			<Plus size={16} aria-hidden="true" /> Dodaj pytanie
+		</button>
 
 		<input type="hidden" name="questions" value={JSON.stringify(questions)} />
 
@@ -135,6 +138,9 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;

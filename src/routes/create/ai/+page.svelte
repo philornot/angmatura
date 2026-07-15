@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { ArrowLeft, X } from '@lucide/svelte';
 
 	let files = $state<File[]>([]);
 	let previews = $state<string[]>([]);
@@ -69,7 +70,7 @@
 </svelte:head>
 
 <div class="container page">
-	<a href="/" class="back">← Strona główna</a>
+	<a href="/" class="back"><ArrowLeft size={14} aria-hidden="true" /> Strona główna</a>
 	<h1>Stwórz zestaw ze zdjęcia</h1>
 	<p class="sub">
 		Wklej (Ctrl+V) lub przeciągnij zrzuty ekranu całego zadania z arkusza CKE. AI rozpozna typ
@@ -106,7 +107,9 @@
 			{#each previews as src, i (src)}
 				<div class="thumb">
 					<img {src} alt="Zrzut ekranu {i + 1}" />
-					<button type="button" class="remove" onclick={() => removeFile(i)} aria-label="Usuń">×</button>
+					<button type="button" class="remove" onclick={() => removeFile(i)} aria-label="Usuń">
+						<X size={14} aria-hidden="true" />
+					</button>
 				</div>
 			{/each}
 		</div>
@@ -135,6 +138,9 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;
@@ -194,11 +200,13 @@
 		right: 4px;
 		width: 22px;
 		height: 22px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		border-radius: 50%;
 		border: none;
 		background: rgba(0, 0, 0, 0.55);
 		color: white;
-		font-size: 14px;
 		line-height: 1;
 		cursor: pointer;
 	}

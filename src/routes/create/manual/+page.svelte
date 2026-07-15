@@ -3,6 +3,7 @@
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
 	import type { EditableQuestion } from '$lib/components/KwtQuestionEditor.svelte';
 	import type { SetType } from '$lib/types';
+	import { ArrowLeft, Plus } from '@lucide/svelte';
 
 	let { form } = $props();
 
@@ -39,9 +40,9 @@
 </svelte:head>
 
 <div class="container page">
-	<a href="/create" class="back">← Wybierz inny sposób</a>
+	<a href="/create" class="back"><ArrowLeft size={14} aria-hidden="true" /> Wybierz inny sposób</a>
 	<h1>Dodaj zestaw ręcznie</h1>
-	<p class="sub">Wpisz pytania samodzielnie — bez pomocy AI.</p>
+	<p class="sub">Wpisz pytania ręcznie.</p>
 
 	{#if form?.message}
 		<p class="error-banner">{form.message}</p>
@@ -91,7 +92,9 @@
 			{/each}
 		</div>
 
-		<button type="button" class="btn btn-secondary btn-block" onclick={addQuestion}>+ Dodaj pytanie</button>
+		<button type="button" class="btn btn-secondary btn-block" onclick={addQuestion}>
+			<Plus size={16} aria-hidden="true" /> Dodaj pytanie
+		</button>
 
 		<input type="hidden" name="questions" value={JSON.stringify(questions)} />
 
@@ -110,6 +113,9 @@
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;
