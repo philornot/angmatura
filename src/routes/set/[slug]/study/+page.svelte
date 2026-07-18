@@ -83,7 +83,7 @@
 		<div class="summary card">
 			{#if wrongIds.length === 0}
 				<p class="summary-eyebrow mono">runda {round}</p>
-				<h1 class="with-icon">Zero błędów. <PartyPopper size={22} aria-hidden="true" /></h1>
+				<h1 class="with-icon">Zero błędów. 🎉</h1>
 				<p class="summary-sub">Ukończono {queue.length} {queue.length === 1 ? 'pytanie' : 'pytań'} bez pomyłki.</p>
 				<a href="/set/{set.slug}" class="btn btn-primary btn-block">Wróć do zestawu</a>
 			{:else}
