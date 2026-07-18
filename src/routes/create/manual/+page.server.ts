@@ -32,6 +32,6 @@ export const actions: Actions = {
 
 		const set = createSet({ title, sourceLabel, type, isPublic });
 		insertQuestions(set.id, questions);
-		redirect(303, `/set/${set.slug}`);
+		redirect(303, `/set/${set.slug}?created=1`);
 	}
 };

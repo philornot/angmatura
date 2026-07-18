@@ -1,8 +1,24 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
 
 	let { data } = $props();
 	let set = $derived(data.set);
+
+	let shareUrl = $derived(`${page.url.origin}/set/${set.slug}`);
+	let showShareBanner = $derived(page.url.searchParams.get('created') === '1' && !set.isPublic);
+	let copied = $state(false);
+
+	async function copyLink() {
+		try {
+			await navigator.clipboard.writeText(shareUrl);
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch {
+			// Clipboard API unavailable (e.g. insecure context) — the link is still
+			// visible in the banner for the user to select and copy manually.
+		}
+	}
 </script>
 
 <svelte:head>
@@ -10,6 +26,21 @@
 </svelte:head>
 
 <div class="container page">
+	{#if showShareBanner}
+		<div class="share-banner">
+			<p>
+				Ten zestaw jest prywatny — nie pojawi się na stronie głównej. Zapisz ten link, żeby móc
+				do niego wrócić:
+			</p>
+			<div class="share-row">
+				<input class="share-input mono" type="text" readonly value={shareUrl} onclick={(e) => e.currentTarget.select()} />
+				<button type="button" class="btn btn-secondary" onclick={copyLink}>
+					{copied ? 'Skopiowano!' : 'Skopiuj link'}
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<div class="head">
 		<SetTypeBadge type={set.type} />
 		<h1>{set.title}</h1>
@@ -86,5 +117,32 @@
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: underline;
+	}
+
+	.share-banner {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		background: var(--accent-soft);
+		color: var(--accent-ink);
+		padding: 14px;
+		border-radius: var(--radius-sm);
+		font-size: 14px;
+	}
+
+	.share-row {
+		display: flex;
+		gap: 8px;
+	}
+
+	.share-input {
+		flex: 1;
+		min-width: 0;
+		padding: 8px 10px;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--accent);
+		background: var(--bg, #fff);
+		color: var(--ink);
+		font-size: 13px;
 	}
 </style>
