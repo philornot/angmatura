@@ -1,11 +1,25 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { generateSetFromImages, type ImagePart } from '$lib/server/gemini';
+import { checkRateLimit, getClientIp } from '$lib/server/rateLimit';
 
 const MAX_IMAGES = 12;
 const MAX_BYTES_PER_IMAGE = 8 * 1024 * 1024;
 
-export const POST: RequestHandler = async ({ request }) => {
+// Every call here hits the Gemini API and costs real money, and this
+// endpoint (unlike /admin) has no authorization check — it's reachable by
+// anyone who knows the public URL. Keep the blast radius of an abusive or
+// buggy caller small.
+const RATE_LIMIT = 5;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+	const ip = getClientIp(request, getClientAddress);
+	const rateLimit = checkRateLimit('ai-generate-set', ip, RATE_LIMIT, RATE_LIMIT_WINDOW_MS);
+	if (!rateLimit.allowed) {
+		error(429, `Too many requests. Try again in ${rateLimit.retryAfterSeconds}s.`);
+	}
+
 	const form = await request.formData().catch(() => null);
 	if (!form) error(400, 'Expected multipart/form-data.');
 

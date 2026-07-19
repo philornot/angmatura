@@ -2,12 +2,19 @@ import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { env } from '$env/dynamic/private';
 import { getAllSets, updateSetMeta, deleteSet, setCustomSlug } from '$lib/server/repo/sets';
+import { createAdminSession, destroyAdminSession, isValidAdminSession, verifyAdminPassword } from '$lib/server/adminAuth';
+import { checkRateLimit, getClientIp, resetRateLimit } from '$lib/server/rateLimit';
 
 const COOKIE_NAME = 'angmatura_admin';
 
+// A public Cloudflare Tunnel + a password that's easy to leave as the
+// example default (`change-me`) means the login form needs its own
+// brute-force protection, independent of any app-wide limiter.
+const LOGIN_ATTEMPT_LIMIT = 5;
+const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+
 function isAuthed(cookies: import('@sveltejs/kit').Cookies): boolean {
-	const value = cookies.get(COOKIE_NAME);
-	return !!env.ADMIN_PASSWORD && value === env.ADMIN_PASSWORD;
+	return isValidAdminSession(cookies.get(COOKIE_NAME));
 }
 
 export const load: PageServerLoad = ({ cookies }) => {
@@ -18,18 +25,32 @@ export const load: PageServerLoad = ({ cookies }) => {
 };
 
 export const actions: Actions = {
-	login: async ({ request, cookies }) => {
+	login: async ({ request, cookies, getClientAddress }) => {
+		const ip = getClientIp(request, getClientAddress);
+		const rateLimit = checkRateLimit('admin-login', ip, LOGIN_ATTEMPT_LIMIT, LOGIN_ATTEMPT_WINDOW_MS);
+		if (!rateLimit.allowed) {
+			return fail(429, {
+				message: `Zbyt wiele prób logowania. Spróbuj ponownie za ${Math.ceil(rateLimit.retryAfterSeconds / 60)} min.`
+			});
+		}
+
 		const form = await request.formData();
 		const password = String(form.get('password') ?? '');
 
 		if (!env.ADMIN_PASSWORD) {
 			return fail(500, { message: 'ADMIN_PASSWORD nie jest ustawione na serwerze.' });
 		}
-		if (password !== env.ADMIN_PASSWORD) {
+		if (!verifyAdminPassword(password, env.ADMIN_PASSWORD)) {
 			return fail(401, { message: 'Nieprawidłowe hasło.' });
 		}
 
-		cookies.set(COOKIE_NAME, password, {
+		// Successful login: this IP no longer needs to count against the
+		// attempt limit (a legitimate admin logging in repeatedly across
+		// devices shouldn't get locked out).
+		resetRateLimit('admin-login', ip);
+
+		const token = createAdminSession();
+		cookies.set(COOKIE_NAME, token, {
 			path: '/',
 			httpOnly: true,
 			sameSite: 'strict',
@@ -39,6 +60,7 @@ export const actions: Actions = {
 	},
 
 	logout: async ({ cookies }) => {
+		destroyAdminSession(cookies.get(COOKIE_NAME));
 		cookies.delete(COOKIE_NAME, { path: '/' });
 		return { loggedOut: true };
 	},

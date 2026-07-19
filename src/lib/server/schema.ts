@@ -63,6 +63,11 @@ export function initSchema(db: Database.Database) {
 			PRIMARY KEY (device_id, question_id)
 		);
 
+		CREATE TABLE IF NOT EXISTS admin_sessions (
+			token TEXT PRIMARY KEY,
+			expires_at INTEGER NOT NULL
+		);
+
 		CREATE INDEX IF NOT EXISTS idx_questions_set_id ON questions(set_id);
 		CREATE INDEX IF NOT EXISTS idx_answers_attempt_id ON answers(attempt_id);
 		CREATE INDEX IF NOT EXISTS idx_progress_device_due ON question_progress(device_id, next_due_at);
