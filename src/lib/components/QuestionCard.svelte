@@ -2,6 +2,7 @@
 	import type { QuestionPrompt, SetType, CheckResult } from '$lib/types';
 	import StatusIcon from './StatusIcon.svelte';
 	import StampBadge from './StampBadge.svelte';
+	import { renderExplanationMarkdown } from '$lib/markdownLite';
 
 	let {
 		question,
@@ -190,7 +191,7 @@
 					</div>
 
 					{#if result.explanation}
-						<p class="feedback-explanation">{result.explanation}</p>
+						<div class="feedback-explanation">{@html renderExplanationMarkdown(result.explanation)}</div>
 					{/if}
 
 					<button type="button" class="btn btn-primary btn-block" onclick={() => onAdvance(result!.isCorrect)}>
@@ -345,6 +346,27 @@
 		background: var(--paper);
 		border-radius: var(--radius-sm);
 		padding: 10px 12px;
+	}
+
+	/* renderExplanationMarkdown() wraps each paragraph in its own <p>, which
+	   would otherwise bring the browser's default paragraph margins along. */
+	.feedback-explanation :global(p) {
+		margin: 0;
+	}
+
+	.feedback-explanation :global(p + p) {
+		margin-top: 8px;
+	}
+
+	.feedback-explanation :global(strong) {
+		color: var(--ink);
+	}
+
+	.feedback-explanation :global(code) {
+		background: var(--surface, rgba(0, 0, 0, 0.06));
+		padding: 1px 4px;
+		border-radius: 4px;
+		font-size: 13px;
 	}
 
 	/* Styl przycisku "Wyjaśnij" – mniejszy, z obramowaniem */

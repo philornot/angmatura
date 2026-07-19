@@ -133,13 +133,28 @@ const typeLabels: Record<SetType, string> = {
 	translation: 'partial-sentence translation'
 };
 
-/** One cheap, cached-on-first-use explanation of the grammar being tested (spec 4.3). */
+/**
+ * One cheap, cached-on-first-use explanation of *why* the correct answer is
+ * what it is (spec 4.3). Earlier version only asked the model to name the
+ * grammatical construction ("this tests the Third Conditional") in one
+ * sentence — technically true but useless to a student who got it wrong,
+ * since it never says how the source sentence's meaning leads to that
+ * specific form. This version asks for a short walkthrough instead.
+ */
 export async function generateExplanation(question: Question, setType: SetType): Promise<string> {
-	const prompt = `This is a ${typeLabels[setType]} question from the Polish English matura exam.
+	const prompt = `This is a ${typeLabels[setType]} question from the Polish English matura exam. A student answered incorrectly and needs to understand why, in Polish.
 ${question.sentence1 ? `Source sentence: ${question.sentence1}\n` : ''}Sentence with gap: ${question.sentence2WithGap}
 ${question.keyword ? `Key word: ${question.keyword}\n` : ''}Correct answer: ${question.correctAnswer}
 
-In exactly one sentence, in Polish, explain what grammatical construction this transformation is testing. Do not restate the answer, just name and briefly explain the construction.`;
+Write a SHORT explanation in Polish — 2-3 sentences, no more — that actually teaches the transformation instead of just labeling it. Cover, briefly:
+1. What grammatical construction/rule is being tested (name it in a few words, not a definition).
+2. Why THIS specific sentence needs that form — connect its meaning/tense (or the key word's requirements) to the gap. Be concrete about this sentence, don't give a generic textbook explanation that could apply to any example of the construction.
+
+Only mention a common mistake if it fits naturally in one short clause — don't force it in as a third point.
+
+You may refer to fragments of the correct answer where needed (e.g. "ponieważ zdanie odnosi się do przeszłości, potrzebujemy 'would have + III forma'") — the student already sees the full answer separately, so this isn't redundant, it's the reasoning. Do not just restate the answer with no reasoning attached.
+
+Formatting: plain prose. You may wrap at most one or two key words/phrases in **double asterisks** for emphasis if it genuinely helps (e.g. **would have + III forma**), but do not use headers, bullet lists, or numbered lists — this renders as a single short paragraph in the app.`;
 
 	const response = await getClient().models.generateContent({
 		model: getModel(),
