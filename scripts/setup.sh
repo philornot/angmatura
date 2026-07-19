@@ -32,6 +32,13 @@ else
 	npm install
 fi
 
+echo "==> Running tests (using $PKG_RUNNER)"
+if [ "$PKG_RUNNER" = "bun" ]; then
+	bun run test
+else
+	npm test
+fi
+
 if [ ! -f .env ]; then
 	echo "==> Creating .env from .env.example — edit it before deploying (GEMINI_API_KEY, ADMIN_PASSWORD)"
 	cp .env.example .env

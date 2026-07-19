@@ -19,6 +19,13 @@ else
 	npm install
 fi
 
+echo "==> Running tests (using $PKG_RUNNER)"
+if [ "$PKG_RUNNER" = "bun" ]; then
+	bun run test
+else
+	npm test
+fi
+
 echo "==> Building (using $PKG_RUNNER)"
 if [ "$PKG_RUNNER" = "bun" ]; then
 	bun run build
