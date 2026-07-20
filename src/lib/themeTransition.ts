@@ -17,7 +17,7 @@ interface ViewTransition {
     skipTransition: () => void;
 }
 
-interface DocumentWithViewTransitions extends Document {
+interface DocumentWithViewTransitions extends Omit<Document, 'startViewTransition'> {
     startViewTransition?: (callback: () => void) => ViewTransition;
 }
 
@@ -25,6 +25,15 @@ const WAVE_DURATION_MS = 650;
 const WAVE_EASING = 'cubic-bezier(0.65, 0, 0.35, 1)';
 const CROSSFADE_CLASS = 'theme-crossfade';
 const CROSSFADE_DURATION_MS = 500;
+
+// A fast double-tap (easy to trigger by accident on a touchscreen, harder
+// with a mouse) can call runThemeWave a second time before the first
+// transition has finished. Letting both run at once forces the browser to
+// juggle two full-page snapshots and two clip-path animations simultaneously
+// — on weaker mobile GPUs this drops frames and the wave can visibly glitch
+// or appear to originate from the wrong point. Tracking the in-flight
+// transition lets a new tap cleanly cut the old one short first.
+let activeTransition: ViewTransition | null = null;
 
 /**
  * Radius (px) an expanding circle centred at (x, y) needs to fully cover a
@@ -71,6 +80,10 @@ export function runThemeWave(origin: WaveOrigin | null, apply: () => void): void
         const {x, y} = origin;
         const endRadius = computeCoverRadius(x, y, window.innerWidth, window.innerHeight);
 
+        // Cut off a still-running transition instead of letting it fight the
+        // new one for compositor time.
+        activeTransition?.skipTransition();
+
         let transition: ViewTransition;
         try {
             transition = doc.startViewTransition(apply);
@@ -80,6 +93,11 @@ export function runThemeWave(origin: WaveOrigin | null, apply: () => void): void
             apply();
             return;
         }
+
+        activeTransition = transition;
+        transition.finished.finally(() => {
+            if (activeTransition === transition) activeTransition = null;
+        });
 
         transition.ready
             .then(() => {
