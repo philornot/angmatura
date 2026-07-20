@@ -127,6 +127,19 @@
 		border-left: none;
 	}
 
+	/* The solid accent + white-text combo that works in light mode reads as
+	   glaring against a dark page — swap to the same softened accent-soft /
+	   accent-ink pairing used for lower-emphasis accent surfaces elsewhere
+	   (e.g. QuestionCard's hint reveal) instead of a bright solid block. */
+	:global([data-theme='dark']) .hero {
+		background: var(--accent-soft);
+		color: var(--accent-ink);
+	}
+
+	:global([data-theme='dark']) .hero h1 {
+		color: var(--accent-ink);
+	}
+
 	.hero-text {
 		flex: 1;
 	}
