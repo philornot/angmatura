@@ -1,7 +1,8 @@
 <script lang="ts">
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
-	import type { SetType } from '$lib/types';
-	import { ArrowRight, Star, Plus } from '@lucide/svelte';
+	import type {SetType} from '$lib/types';
+	import {ArrowRight, Plus, Star} from '@lucide/svelte';
+	import {getDeviceId} from '$lib/deviceId';
 
 	let { data } = $props();
 
@@ -12,6 +13,33 @@
 	};
 
 	const ORDER: SetType[] = ['kwt', 'grammar', 'translation'];
+
+	/** Polish plural rule for "pytanie": 1 → pytanie, 2–4 (not 12–14) → pytania, else → pytań. */
+	function pytanieForm(n: number): string {
+		if (n === 1) return 'pytanie';
+		const lastDigit = n % 10;
+		const lastTwo = n % 100;
+		if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return 'pytania';
+		return 'pytań';
+	}
+
+	// deviceId lives only in localStorage, so we can't know the due count
+	// during SSR — fetch it client-side and keep the banner hidden until we
+	// actually know there's something to review (spec: no due items = no banner).
+	let dueCount = $state(0);
+
+	$effect(() => {
+		const deviceId = getDeviceId();
+		if (!deviceId) return;
+		fetch(`/api/review/count?deviceId=${encodeURIComponent(deviceId)}`)
+				.then((r) => (r.ok ? r.json() : null))
+				.then((result: { count: number } | null) => {
+					if (result) dueCount = result.count;
+				})
+				.catch(() => {
+					// Silent failure — banner simply stays hidden, which is the safe default.
+				});
+	});
 </script>
 
 <svelte:head>
@@ -19,14 +47,19 @@
 </svelte:head>
 
 <div class="container">
-	<a href="/review" class="hero card">
-		<div class="hero-text">
-			<p class="eyebrow mono">powtórki</p>
-			<h1>Powtórz to, co Ci nie idzie</h1>
-			<p class="hero-sub">Kilka pytań z Twoich wcześniejszych błędów, dobranych automatycznie.</p>
-		</div>
-		<ArrowRight class="hero-arrow" size={28} aria-hidden="true" />
-	</a>
+	{#if dueCount > 0}
+		<a href="/review" class="hero card">
+			<div class="hero-text">
+				<p class="eyebrow mono">powtórki</p>
+				<h1>Powtórz to, co Ci nie idzie</h1>
+				<p class="hero-sub">
+					Czeka {dueCount} {pytanieForm(dueCount)} z Twoich wcześniejszych błędów, dobranych
+					automatycznie.
+				</p>
+			</div>
+			<ArrowRight class="hero-arrow" size={28} aria-hidden="true"/>
+		</a>
+	{/if}
 
 	{#if data.featured.length > 0}
 		<section class="section featured-section">

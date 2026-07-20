@@ -1,8 +1,8 @@
-import { db } from '../db';
-import type { Question } from '$lib/types';
-import { isAnswerCorrect } from '../answerUtils';
-import { getQuestionById } from './questions';
-import { nextBox, nextDueAt } from '../leitner';
+import {db} from '../db';
+import type {Question} from '$lib/types';
+import {isAnswerCorrect} from '../answerUtils';
+import {getQuestionById} from './questions';
+import {nextBox, nextDueAt} from '../leitner';
 
 interface ProgressRow {
 	device_id: string;
@@ -76,7 +76,8 @@ export function getDueQuestions(deviceId: string, limit = 15): Question[] {
 	const rows = db
 		.prepare(
 			`SELECT question_id, box FROM question_progress
-			 WHERE device_id = ? AND (next_due_at IS NULL OR next_due_at <= CURRENT_TIMESTAMP)
+			 WHERE device_id = ?
+			   AND (next_due_at IS NULL OR datetime(next_due_at) <= datetime('now'))
 			 ORDER BY box ASC, next_due_at ASC
 			 LIMIT ?`
 		)
@@ -94,7 +95,7 @@ export function getDueQuestionsWithSetInfo(deviceId: string, limit = 15) {
 			`SELECT question_progress.question_id AS question_id
 			 FROM question_progress
 			 WHERE question_progress.device_id = ?
-			   AND (question_progress.next_due_at IS NULL OR question_progress.next_due_at <= CURRENT_TIMESTAMP)
+			   AND (question_progress.next_due_at IS NULL OR datetime(question_progress.next_due_at) <= datetime('now'))
 			 ORDER BY question_progress.box ASC, question_progress.next_due_at ASC
 			 LIMIT ?`
 		)
@@ -111,6 +112,19 @@ export function getDueQuestionsWithSetInfo(deviceId: string, limit = 15) {
 		result.push({ question, setTitle: setRow.title, setSlug: setRow.slug, setType: setRow.type });
 	}
 	return result;
+}
+
+/** Count of questions due right now, for deciding whether to show the review banner at all. */
+export function getDueQuestionsCount(deviceId: string): number {
+	const row = db
+		.prepare(
+			`SELECT COUNT(*) AS count
+			 FROM question_progress
+			 WHERE device_id = ?
+			   AND (next_due_at IS NULL OR datetime(next_due_at) <= datetime('now'))`
+		)
+		.get(deviceId) as { count: number };
+	return row.count;
 }
 
 export function hasAnyProgress(deviceId: string): boolean {
