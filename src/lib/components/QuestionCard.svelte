@@ -1,30 +1,71 @@
 <script lang="ts">
-	import type { QuestionPrompt, SetType, CheckResult } from '$lib/types';
+	import type {CheckResult, QuestionPrompt, SetType} from '$lib/types';
 	import StatusIcon from './StatusIcon.svelte';
 	import StampBadge from './StampBadge.svelte';
-	import { renderExplanationMarkdown } from '$lib/markdownLite';
+	import {renderExplanationMarkdown} from '$lib/markdownLite';
 
 	let {
 		question,
 		setType,
 		deviceId,
 		contextLabel,
-		onAdvance
+		onAdvance,
+		initialGiven = '',
+		initialResult = null
 	}: {
 		question: QuestionPrompt;
 		setType: SetType;
 		deviceId: string;
 		contextLabel?: string;
-		onAdvance: (wasCorrect: boolean) => void;
+		onAdvance: (wasCorrect: boolean, given: string, result: CheckResult) => void;
+		// Used when this card is being re-shown via the "Wróć" (go back) action —
+		// restores the answer/feedback the user already saw instead of a blank input.
+		initialGiven?: string;
+		initialResult?: CheckResult | null;
 	} = $props();
 
-	let given = $state('');
+	// svelte-ignore state_referenced_locally
+	let given = $state(initialGiven);
 	let checking = $state(false);
-	let result: CheckResult | null = $state(null);
+	// svelte-ignore state_referenced_locally
+	let result: CheckResult | null = $state(initialResult);
 	let hint: { firstLetter: string; wordCount: number } | null = $state(null);
 	let hintLoading = $state(false);
 	let explainLoading = $state(false);
 	let checkError = $state<string | null>(null);
+	let answerInputEl: HTMLInputElement | undefined = $state();
+
+	// Guards the "Enter/Spacja przechodzi dalej" shortcut against a fast
+	// double key-press: the first press submits the check (async), and if the
+	// second press's keydown lands after the result has already come back,
+	// it would otherwise immediately trigger "Dalej" before the feedback was
+	// ever seen. A short cooldown after the result appears fixes that.
+	let canAdvanceViaKeyboard = $state(false);
+	$effect(() => {
+		if (!result) {
+			canAdvanceViaKeyboard = false;
+			return;
+		}
+		canAdvanceViaKeyboard = false;
+		const id = setTimeout(() => {
+			canAdvanceViaKeyboard = true;
+		}, 250);
+		return () => clearTimeout(id);
+	});
+
+	function focusAnswerInput() {
+		answerInputEl?.focus();
+	}
+
+	function handleWindowKeydown(e: KeyboardEvent) {
+		if (!result || e.repeat) return;
+		if (e.key !== 'Enter' && e.key !== ' ') return;
+		// Prevent scrolling (Space) or double form-ish submission (Enter) even
+		// during the cooldown — we just don't advance yet.
+		e.preventDefault();
+		if (!canAdvanceViaKeyboard) return;
+		onAdvance(result.isCorrect, given, result);
+	}
 
 	let gapParts = $derived(question.sentence2WithGap.split('______'));
 	let wordHint = $derived(
@@ -100,6 +141,8 @@
 	}
 </script>
 
+<svelte:window onkeydown={handleWindowKeydown}/>
+
 <div class="card-wrap">
 	{#if contextLabel}
 		<p class="context-label">{contextLabel}</p>
@@ -118,13 +161,20 @@
 				{/if}
 			{/if}
 
-			<p class="gap-sentence">
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+			<p
+					class="gap-sentence"
+					class:tappable={!result}
+					onclick={() => !result && focusAnswerInput()}
+			>
 				{gapParts[0]}<span class="gap-marker" aria-hidden="true">______</span>{gapParts[1] ?? ''}
 			</p>
 
 			{#if !result}
 				<label class="visually-hidden" for="answer-input">Twoja odpowiedź</label>
 				<input
+						bind:this={answerInputEl}
 					id="answer-input"
 					class="field answer-input"
 					type="text"
@@ -194,7 +244,11 @@
 						<div class="feedback-explanation">{@html renderExplanationMarkdown(result.explanation)}</div>
 					{/if}
 
-					<button type="button" class="btn btn-primary btn-block" onclick={() => onAdvance(result!.isCorrect)}>
+					<button
+							type="button"
+							class="btn btn-primary btn-block"
+							onclick={() => onAdvance(result!.isCorrect, given, result!)}
+					>
 						Dalej
 					</button>
 				</div>
@@ -271,6 +325,17 @@
 		border-bottom: 2.5px solid var(--accent);
 		padding-bottom: 1px;
 		margin: 0 1px;
+	}
+
+	/* Tapping anywhere in the sentence (not just precisely on the thin
+	   underline) focuses the real input — much easier to hit on mobile. */
+	.gap-sentence.tappable {
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.gap-sentence.tappable .gap-marker {
+		cursor: text;
 	}
 
 	.answer-input {
