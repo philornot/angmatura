@@ -27,13 +27,27 @@ const CROSSFADE_CLASS = 'theme-crossfade';
 const CROSSFADE_DURATION_MS = 500;
 
 // Mobile devices get a cheaper, simpler animation: a band that grows
-// outward from the centre of the screen (left and right) until it covers
-// the whole viewport, instead of a circle expanding from the exact tap
-// point. No radius-to-farthest-corner math, no dependency on where on the
-// button the person tapped — just two clip-path keyframes. Lighter on
-// weaker mobile GPUs and easier to follow visually on a small screen.
+// outward from the centre of the screen, along one axis at a time — left
+// and right, or up and down (picked per toggle, see `pickMobileAxis`) —
+// until it covers the whole viewport. Instead of a circle expanding from
+// the exact tap point, this needs no radius-to-farthest-corner math and no
+// dependency on where on the button the person tapped — just two clip-path
+// keyframes. Lighter on weaker mobile GPUs and easier to follow visually
+// on a small screen.
 const MOBILE_MEDIA_QUERY = '(max-width: 768px)';
 const MOBILE_WAVE_DURATION_MS = 500;
+
+// clip-path inset() keyframes for each axis: start as a zero-width sliver
+// through the centre of the screen, end fully expanded to the edges.
+// Typed as Record<MobileWaveAxis, string[]> (not `as const`) because
+// Element.animate() wants a mutable string[] for a keyframe property, not
+// a readonly tuple.
+const MOBILE_CLIP_KEYFRAMES: Record<'horizontal' | 'vertical', string[]> = {
+    horizontal: ['inset(0 50% 0 50%)', 'inset(0 0% 0 0%)'],
+    vertical: ['inset(50% 0 50% 0)', 'inset(0% 0 0% 0)']
+};
+
+export type MobileWaveAxis = keyof typeof MOBILE_CLIP_KEYFRAMES;
 
 // Spam-proofing: while a theme transition is in flight, every additional
 // toggle request (extra taps/clicks, a system colour-scheme change firing
@@ -48,6 +62,18 @@ let transitionInFlight: Promise<void> | null = null;
 
 function isMobileViewport(): boolean {
     return typeof matchMedia === 'function' && matchMedia(MOBILE_MEDIA_QUERY).matches;
+}
+
+/**
+ * Picks which axis the mobile band expands along for a single toggle: a
+ * horizontal band growing left/right, or a vertical one growing up/down —
+ * alternating unpredictably so the animation doesn't feel identical every
+ * time. Pure and DOM-free (takes its randomness as a parameter) so it's
+ * cheap to unit-test: pass a stub instead of `Math.random` to pin the
+ * result down.
+ */
+export function pickMobileAxis(random: () => number = Math.random): MobileWaveAxis {
+    return random() < 0.5 ? 'horizontal' : 'vertical';
 }
 
 /**
@@ -77,11 +103,12 @@ function prefersReducedMotion(): boolean {
  *    circular clip on the "new" snapshot from the origin point, so the new
  *    theme visibly spreads outward from wherever the person tapped, like
  *    ink soaking into paper. On mobile-sized viewports (see
- *    `isMobileViewport`) we use a simpler band that grows outward from the
- *    horizontal centre of the screen instead — cheaper to animate and
- *    easier to follow on a small screen.
+ *    `isMobileViewport`) we use a simpler band instead, growing outward
+ *    from the centre of the screen along a randomly-picked axis each time
+ *    — left/right or up/down (see `pickMobileAxis`) — cheaper to animate
+ *    and easier to follow on a small screen.
  * 2. No View Transitions support, or no origin point (e.g. the system's
- *    color scheme changed while the tab was open, which has no tap
+ *    colour scheme changed while the tab was open, which has no tap
  *    position): a brief, uniform crossfade of every colour via the
  *    `.theme-crossfade` rule in app.css. No spreading circle, but still
  *    smooth rather than an instant, jarring swap.
@@ -130,9 +157,10 @@ export function runThemeWave(origin: WaveOrigin | null, apply: () => void): void
  *
  * On desktop/large viewports this grows a circular clip-path from `origin`
  * until it covers the whole viewport. On mobile viewports it instead grows
- * a band outward from the horizontal centre of the screen — simpler to
- * compute and lighter to animate, and independent of exactly where on the
- * button the person tapped.
+ * a band outward from the centre of the screen, along a randomly-chosen
+ * axis (horizontal or vertical) — simpler to compute and lighter to
+ * animate, and independent of exactly where on the button the person
+ * tapped.
  *
  * Args:
  *     origin: Viewport point the wave should spread outward from (only
@@ -168,10 +196,7 @@ function startWave(origin: WaveOrigin, apply: () => void): Promise<void> {
             if (mobile) {
                 document.documentElement.animate(
                     {
-                        clipPath: [
-                            'inset(0 50% 0 50%)',
-                            'inset(0 0% 0 0%)'
-                        ]
+                        clipPath: [...MOBILE_CLIP_KEYFRAMES[pickMobileAxis()]]
                     },
                     {
                         duration: MOBILE_WAVE_DURATION_MS,

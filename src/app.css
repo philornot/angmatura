@@ -5,6 +5,10 @@
 	few moments of editorial weight (set titles); Inter runs everything a
 	student actually reads and types into; IBM Plex Mono marks anything that
 	reads as "exam data" — counters, timers, the keyword chip.
+
+	Fonts: Fraunces/Inter have been swapped for Libre Baskerville (display)
+	and Atkinson Hyperlegible Next (body) — see app.html for the Google
+	Fonts import.
 */
 
 :root {
@@ -37,8 +41,8 @@
 
 	--shadow-card: 0 1px 2px rgba(28, 36, 48, 0.06), 0 8px 24px -12px rgba(28, 36, 48, 0.18);
 
-	--font-display: 'Fraunces', ui-serif, Georgia, serif;
-	--font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--font-display: 'Libre Baskerville', ui-serif, Georgia, serif;
+	--font-body: 'Atkinson Hyperlegible Next', ui-sans-serif, system-ui, -apple-system, sans-serif;
 	--font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
 
 	--tap-min: 44px;
@@ -157,7 +161,7 @@ h1,
 h2,
 h3 {
 	font-family: var(--font-display);
-	font-weight: 600;
+	font-weight: 700;
 	line-height: 1.15;
 	margin: 0;
 	color: var(--ink);

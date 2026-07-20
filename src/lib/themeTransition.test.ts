@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {computeCoverRadius} from './themeTransition';
+import {computeCoverRadius, pickMobileAxis} from './themeTransition';
 
 describe('computeCoverRadius', () => {
     it('reaches the farthest corner when the origin is near the top-left', () => {
@@ -25,5 +25,31 @@ describe('computeCoverRadius', () => {
 
     it('never returns a negative radius for a zero-size viewport', () => {
         expect(computeCoverRadius(0, 0, 0, 0)).toBe(0);
+    });
+});
+
+describe('pickMobileAxis', () => {
+    it('picks horizontal for random values below 0.5', () => {
+        expect(pickMobileAxis(() => 0)).toBe('horizontal');
+        expect(pickMobileAxis(() => 0.49)).toBe('horizontal');
+    });
+
+    it('picks vertical for random values 0.5 and above', () => {
+        expect(pickMobileAxis(() => 0.5)).toBe('vertical');
+        expect(pickMobileAxis(() => 0.99)).toBe('vertical');
+    });
+
+    it('only ever returns one of the two known axes', () => {
+        const seeds = [0, 0.1, 0.25, 0.4999, 0.5, 0.75, 0.999];
+        for (const seed of seeds) {
+            expect(['horizontal', 'vertical']).toContain(pickMobileAxis(() => seed));
+        }
+    });
+
+    it('defaults to Math.random when no source is given, so repeated calls can differ', () => {
+        // Not deterministic by nature (that's the point), but every result
+        // must still be a valid axis.
+        const result = pickMobileAxis();
+        expect(['horizontal', 'vertical']).toContain(result);
     });
 });
