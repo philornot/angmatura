@@ -1,4 +1,5 @@
 <script lang="ts">
+	import {onMount} from 'svelte';
 	import type {CheckResult, QuestionPrompt, SetType} from '$lib/types';
 	import StatusIcon from './StatusIcon.svelte';
 	import StampBadge from './StampBadge.svelte';
@@ -56,6 +57,13 @@
 	function focusAnswerInput() {
 		answerInputEl?.focus();
 	}
+
+	// Lets the whole flow (typing an answer, checking it, moving on) happen
+	// without ever touching the mouse: each new card arrives with the answer
+	// input already focused, so the user can start typing immediately.
+	onMount(() => {
+		focusAnswerInput();
+	});
 
 	function handleWindowKeydown(e: KeyboardEvent) {
 		if (!result || e.repeat) return;
