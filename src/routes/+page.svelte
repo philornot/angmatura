@@ -3,6 +3,7 @@
 	import type {SetType} from '$lib/types';
 	import {ArrowRight, Plus, Star} from '@lucide/svelte';
 	import {getDeviceId} from '$lib/deviceId';
+	import {pytanieForm} from '$lib/polishPlural';
 
 	let { data } = $props();
 
@@ -13,15 +14,6 @@
 	};
 
 	const ORDER: SetType[] = ['kwt', 'grammar', 'translation'];
-
-	/** Polish plural rule for "pytanie": 1 → pytanie, 2–4 (not 12–14) → pytania, else → pytań. */
-	function pytanieForm(n: number): string {
-		if (n === 1) return 'pytanie';
-		const lastDigit = n % 10;
-		const lastTwo = n % 100;
-		if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return 'pytania';
-		return 'pytań';
-	}
 
 	// deviceId lives only in localStorage, so we can't know the due count
 	// during SSR — fetch it client-side and keep the banner hidden until we

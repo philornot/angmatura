@@ -1,9 +1,10 @@
 <script lang="ts">
 	import QuestionCard from '$lib/components/QuestionCard.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
-	import { getDeviceId } from '$lib/deviceId';
-	import type { QuestionPrompt } from '$lib/types';
-	import { ArrowLeft, PartyPopper } from '@lucide/svelte';
+	import {getDeviceId} from '$lib/deviceId';
+	import {pytanieForm, zostaloForm} from '$lib/polishPlural';
+	import type {QuestionPrompt} from '$lib/types';
+	import {ArrowLeft} from '@lucide/svelte';
 
 	let { data } = $props();
 	let set = $derived(data.set);
@@ -84,13 +85,13 @@
 			{#if wrongIds.length === 0}
 				<p class="summary-eyebrow mono">runda {round}</p>
 				<h1 class="with-icon">Zero błędów. 🎉</h1>
-				<p class="summary-sub">Ukończono {queue.length} {queue.length === 1 ? 'pytanie' : 'pytań'} bez pomyłki.</p>
+				<p class="summary-sub">Ukończono {queue.length} {pytanieForm(queue.length)} bez pomyłki.</p>
 				<a href="/set/{set.slug}" class="btn btn-primary btn-block">Wróć do zestawu</a>
 			{:else}
 				<p class="summary-eyebrow mono">runda {round}</p>
 				<h1>{queue.length - wrongIds.length} / {queue.length} poprawnie</h1>
 				<p class="summary-sub">
-					Zostało {wrongIds.length} {wrongIds.length === 1 ? 'pytanie' : 'pytań'} do powtórzenia.
+					{zostaloForm(wrongIds.length)} {wrongIds.length} {pytanieForm(wrongIds.length)} do powtórzenia.
 				</p>
 				<button type="button" class="btn btn-primary btn-block" onclick={repeatMistakesOnly}>
 					Powtórz tylko błędy

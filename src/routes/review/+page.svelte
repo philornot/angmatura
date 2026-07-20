@@ -1,9 +1,10 @@
 <script lang="ts">
 	import QuestionCard from '$lib/components/QuestionCard.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
-	import { getDeviceId } from '$lib/deviceId';
-	import type { QuestionPrompt, SetType } from '$lib/types';
-	import { ArrowLeft, PartyPopper } from '@lucide/svelte';
+	import {getDeviceId} from '$lib/deviceId';
+	import {pytanieForm, zostaloForm} from '$lib/polishPlural';
+	import type {QuestionPrompt, SetType} from '$lib/types';
+	import {ArrowLeft} from '@lucide/svelte';
 
 	interface DueItem {
 		question: QuestionPrompt;
@@ -14,11 +15,20 @@
 
 	let deviceId = $state('');
 	let loading = $state(true);
-	let items = $state<DueItem[]>([]);
-	let index = $state(0);
-	let done = $state(false);
 
-	let current = $derived(items[index]);
+	// `allItems` is the full due set fetched once from the server. `queue` is
+	// the active round — starts as a copy of allItems, and on a "popraw błędy"
+	// restart becomes just the questions missed in the previous round, so we
+	// can requeue them without a round-trip (the server's next_due_at for a
+	// miss is already "now", so a re-fetch would return the same items anyway).
+	let allItems = $state<DueItem[]>([]);
+	let queue = $state<DueItem[]>([]);
+	let index = $state(0);
+	let wrongIds = $state<number[]>([]);
+	let round = $state(1);
+	let roundFinished = $state(false);
+
+	let current = $derived(queue[index]);
 
 	$effect(() => {
 		deviceId = getDeviceId();
@@ -29,7 +39,8 @@
 		fetch(`/api/review?deviceId=${encodeURIComponent(deviceId)}`)
 			.then((r) => r.json())
 			.then((data: DueItem[]) => {
-				items = data;
+				allItems = data;
+				queue = data.slice();
 				loading = false;
 			})
 			.catch(() => {
@@ -37,12 +48,22 @@
 			});
 	});
 
-	function advance() {
-		if (index + 1 < items.length) {
+	function handleAdvance(wasCorrect: boolean) {
+		if (!wasCorrect) wrongIds = [...wrongIds, current.question.id];
+		if (index + 1 < queue.length) {
 			index += 1;
 		} else {
-			done = true;
+			roundFinished = true;
 		}
+	}
+
+	function repeatMistakesOnly() {
+		const byId = new Map(allItems.map((item) => [item.question.id, item]));
+		queue = wrongIds.map((id) => byId.get(id)).filter((item): item is DueItem => !!item);
+		wrongIds = [];
+		index = 0;
+		round += 1;
+		roundFinished = false;
 	}
 </script>
 
@@ -55,27 +76,40 @@
 
 	{#if loading}
 		<p class="empty">Ładowanie…</p>
-	{:else if items.length === 0}
+	{:else if allItems.length === 0}
 		<div class="empty-state card">
 			<h1>Nic teraz nie czeka na powtórzenie</h1>
 			<p>Rozwiąż pierwszy zestaw, żeby tu coś się pojawiło.</p>
 			<a href="/" class="btn btn-primary btn-block">Zobacz zestawy</a>
 		</div>
-	{:else if done}
+	{:else if roundFinished}
 		<div class="empty-state card">
-			<h1 class="with-icon">Powtórki na dziś zrobione <PartyPopper size={22} aria-hidden="true" /></h1>
-			<p>Wróć jutro — kolejne pytania będą czekać, gdy nadejdzie ich pora.</p>
-			<a href="/" class="btn btn-primary btn-block">Strona główna</a>
+			{#if wrongIds.length === 0}
+				<p class="summary-eyebrow mono">runda {round}</p>
+				<h1>Powtórki na dziś zrobione 🎉</h1>
+				<p>Wróć jutro na kolejną rundę powtórek.</p>
+				<a href="/" class="btn btn-primary btn-block">Strona główna</a>
+			{:else}
+				<p class="summary-eyebrow mono">runda {round}</p>
+				<h1>{queue.length - wrongIds.length} / {queue.length} poprawnie</h1>
+				<p>
+					{zostaloForm(wrongIds.length)} {wrongIds.length} {pytanieForm(wrongIds.length)} do poprawienia.
+				</p>
+				<button type="button" class="btn btn-primary btn-block" onclick={repeatMistakesOnly}>
+					Popraw błędy
+				</button>
+				<a href="/" class="btn btn-ghost btn-block">Strona główna</a>
+			{/if}
 		</div>
 	{:else}
-		<ProgressBar current={index + 1} total={items.length} />
+		<ProgressBar current={index + 1} total={queue.length}/>
 		{#key current.question.id}
 			<QuestionCard
 				question={current.question}
 				setType={current.setType}
 				{deviceId}
 				contextLabel={current.setTitle}
-				onAdvance={advance}
+				onAdvance={handleAdvance}
 			/>
 		{/key}
 	{/if}
@@ -98,11 +132,11 @@
 		text-decoration: none;
 	}
 
-	.with-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
+	.summary-eyebrow {
+		font-size: 12px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--muted);
 	}
 
 	.empty {
