@@ -15,18 +15,18 @@
 		"test": "vitest run"
 	},
 	"devDependencies": {
-      "@sveltejs/kit": "^2.70.1",
-      "@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"@sveltejs/kit": "^2.70.1",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@types/better-sqlite3": "^7.6.13",
-      "svelte": "^5.56.6",
-      "svelte-check": "^4.7.3",
+		"svelte": "^5.56.6",
+		"svelte-check": "^4.7.3",
 		"typescript": "^6.0.3",
-      "vite": "^8.1.5",
-      "vitest": "^3.2.7"
+		"vite": "^8.1.5",
+		"vitest": "^3.2.7"
 	},
 	"dependencies": {
-      "@google/genai": "^2.12.0",
-      "@lucide/svelte": "^1.25.0",
+		"@google/genai": "^2.12.0",
+		"@lucide/svelte": "^1.25.0",
 		"@sveltejs/adapter-node": "^5.5.7",
 		"better-sqlite3": "^12.11.1"
 	}
