@@ -3,8 +3,8 @@
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import {getDeviceId} from '$lib/deviceId';
 	import {pytanieForm, zostaloForm} from '$lib/polishPlural';
-	import type {QuestionPrompt} from '$lib/types';
-	import {ArrowLeft} from '@lucide/svelte';
+	import type {CheckResult, QuestionPrompt} from '$lib/types';
+	import {ArrowLeft, Undo2} from '@lucide/svelte';
 
 	let { data } = $props();
 	let set = $derived(data.set);
@@ -23,6 +23,17 @@
 	let round = $state(1);
 	let roundFinished = $state(false);
 
+	// The one card the user is allowed to step back into with "Wróć" — the
+	// card they just finished answering, cached at the moment they advanced
+	// past it. Going further back than this single card is not supported.
+	let lastCompleted = $state<{
+		index: number;
+		question: QuestionPrompt;
+		given: string;
+		result: CheckResult;
+	} | null>(null);
+	let viewingHistory = $state(false);
+
 	// Re-seed the whole session whenever the loaded question list changes —
 	// covers SvelteKit reusing this component when navigating from one set's
 	// Study mode straight to another's. (Harmless no-op on first mount, since
@@ -39,11 +50,21 @@
 		wrongIds = [];
 		round = 1;
 		roundFinished = false;
+		lastCompleted = null;
+		viewingHistory = false;
 	});
 
 	let current = $derived(queue[index]);
 
-	function handleAdvance(wasCorrect: boolean) {
+	// "Wróć" is only offered while looking at the card right after the one
+	// that was just answered, and never while already reviewing history —
+	// that's what keeps it to a single step back.
+	let canGoBack = $derived(
+			!viewingHistory && !roundFinished && lastCompleted !== null && lastCompleted.index === index - 1
+	);
+
+	function handleAdvance(wasCorrect: boolean, given: string, result: CheckResult) {
+		lastCompleted = {index, question: current, given, result};
 		if (!wasCorrect) wrongIds = [...wrongIds, current.id];
 		if (index + 1 < queue.length) {
 			index += 1;
@@ -52,12 +73,23 @@
 		}
 	}
 
+	function goBack() {
+		if (!canGoBack) return;
+		viewingHistory = true;
+	}
+
+	function returnFromHistory() {
+		viewingHistory = false;
+	}
+
 	function repeatMistakesOnly() {
 		queue = wrongIds.map((id) => byId.get(id)!).filter(Boolean);
 		wrongIds = [];
 		index = 0;
 		round += 1;
 		roundFinished = false;
+		lastCompleted = null;
+		viewingHistory = false;
 	}
 </script>
 
@@ -69,17 +101,38 @@
 	{#if !roundFinished}
 		<div class="top">
 			<a href="/set/{set.slug}" class="back"><ArrowLeft size={14} aria-hidden="true" /> {set.title}</a>
-			<ProgressBar current={index + 1} total={queue.length} />
+			<ProgressBar current={(viewingHistory ? lastCompleted!.index : index) + 1} total={queue.length}/>
 		</div>
 
-		{#key current.id}
-			<QuestionCard
-				question={current}
-				setType={set.type}
-				{deviceId}
-				onAdvance={handleAdvance}
-			/>
-		{/key}
+		{#if canGoBack}
+			<button type="button" class="btn btn-ghost back-btn" onclick={goBack}>
+				<Undo2 size={15} aria-hidden="true"/>
+				Wróć
+			</button>
+		{/if}
+
+		{#if viewingHistory && lastCompleted}
+			{#key 'history-' + lastCompleted.question.id}
+				<QuestionCard
+						question={lastCompleted.question}
+						setType={set.type}
+						{deviceId}
+						contextLabel="Poprzednia karta"
+						initialGiven={lastCompleted.given}
+						initialResult={lastCompleted.result}
+						onAdvance={returnFromHistory}
+				/>
+			{/key}
+		{:else}
+			{#key current.id}
+				<QuestionCard
+						question={current}
+						setType={set.type}
+						{deviceId}
+						onAdvance={handleAdvance}
+				/>
+			{/key}
+		{/if}
 	{:else}
 		<div class="summary card">
 			{#if wrongIds.length === 0}
@@ -123,6 +176,15 @@
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;
+	}
+
+	.back-btn {
+		align-self: flex-start;
+		gap: 6px;
+		padding: 6px 12px;
+		min-height: unset;
+		font-size: 13px;
+		margin-top: -6px;
 	}
 
 	.with-icon {
