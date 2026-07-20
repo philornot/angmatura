@@ -2,31 +2,32 @@
     import {Moon, Sun} from '@lucide/svelte';
     import {theme, toggleTheme} from '$lib/theme.svelte';
 
-    // The wave has to spread from the exact spot the person tapped, not just
-    // "somewhere near the button" — so we read the real pointer coordinates
-    // off the event rather than e.g. the button's bounding box centre.
-    //
-    // The one exception: activations that have no real tap point. Keyboard
-    // (Enter/Space) and many assistive-technology activations (VoiceOver on
-    // iOS, TalkBack on Android — both very much "mobile devices") fire a
-    // synthetic click with clientX/clientY pinned to 0 and event.detail set
-    // to 0. Reading those coordinates literally makes the wave spread from
-    // the screen's top-left corner instead of the button, which is exactly
-    // the "not from the button" bug this fixes — so in that case we fall
-    // back to the button's own centre instead.
+    // Store the real pointer coordinates from pointerdown, because on mobile
+    // the click event often has incorrect coordinates (0,0 or delayed).
+    // This way we always have the actual touch/click position.
+    let lastPointer = {x: 0, y: 0};
+
+    function handlePointerDown(e: PointerEvent) {
+        lastPointer = {x: e.clientX, y: e.clientY};
+    }
+
     function handleClick(event: MouseEvent) {
-        if (event.detail === 0) {
-            const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
-            toggleTheme(rect.left + rect.width / 2, rect.top + rect.height / 2);
-            return;
-        }
-        toggleTheme(event.clientX, event.clientY);
+        const button = event.currentTarget as HTMLButtonElement;
+        const rect = button.getBoundingClientRect();
+
+        // Use stored pointer coordinates, or fall back to button centre
+        // if for some reason pointerdown didn't fire (e.g. keyboard activation)
+        const x = lastPointer.x || rect.left + rect.width / 2;
+        const y = lastPointer.y || rect.top + rect.height / 2;
+
+        toggleTheme(x, y);
     }
 </script>
 
 <button
         aria-label={theme.current === 'dark' ? 'Włącz tryb jasny' : 'Włącz tryb ciemny'}
         class="theme-toggle"
+        onpointerdown={handlePointerDown}
         onclick={handleClick}
         title={theme.current === 'dark' ? 'Tryb jasny' : 'Tryb ciemny'}
         type="button"
@@ -47,7 +48,7 @@
         width: var(--tap-min);
         height: var(--tap-min);
         border-radius: 999px;
-        border: 1.5px solid var(--rule);
+        border: 1.5px solid var(--rule); /* todo: fix Float px values may render differently on different browsers */
         background: var(--paper-raised);
         color: var(--ink-soft);
         cursor: pointer;

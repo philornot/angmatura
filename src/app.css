@@ -131,6 +131,11 @@ body {
 	z-index: 2;
 }
 
+/* Ensure the transition group uses our duration, not the browser's default */
+::view-transition-group(root) {
+	animation-duration: 650ms;
+}
+
 /*
 	Fallback path (older browsers with no View Transitions support, or
 	prefers-reduced-motion off but API missing): themeTransition.ts adds this

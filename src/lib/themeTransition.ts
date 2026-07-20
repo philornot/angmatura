@@ -77,51 +77,33 @@ export function runThemeWave(origin: WaveOrigin | null, apply: () => void): void
     const doc = document as DocumentWithViewTransitions;
 
     if (typeof doc.startViewTransition === 'function' && origin) {
-        const {x, y} = origin;
-        const endRadius = computeCoverRadius(x, y, window.innerWidth, window.innerHeight);
-
-        // Cut off a still-running transition instead of letting it fight the
-        // new one for compositor time.
-        activeTransition?.skipTransition();
-
-        let transition: ViewTransition;
-        try {
-            transition = doc.startViewTransition(apply);
-        } catch {
-            // Extremely defensive: if the browser advertises the API but
-            // throws anyway, just apply the change directly.
-            apply();
-            return;
+        if (activeTransition) {
+            // A still-running transition has to be cut off instead of being
+            // left to fight the new one for compositor time — but
+            // `skipTransition()` only *requests* that; the browser still
+            // needs a moment to tear down the old pseudo-element tree and
+            // apply-in-full the state that transition was heading towards.
+            //
+            // The previous version of this code called
+            // `doc.startViewTransition(apply)` again right after
+            // `skipTransition()`, in the very same synchronous tick. That
+            // races the new transition's "before" snapshot capture against
+            // the old transition's teardown: for a brief moment the page
+            // shows the *previous* transition's fully-applied end state with
+            // no clip at all — a plain, uncovered flash of the new palette —
+            // before the new circle wave takes over. Spamming the button
+            // makes this very easy to trigger and see.
+            //
+            // Waiting for `finished` first guarantees the old transition is
+            // completely settled before we start capturing snapshots for the
+            // new one, so the handoff between the two waves is seamless.
+            const previous = activeTransition;
+            previous.skipTransition();
+            previous.finished.catch(() => {
+            }).finally(() => startWave(origin, apply));
+        } else {
+            startWave(origin, apply);
         }
-
-        activeTransition = transition;
-        transition.finished.finally(() => {
-            if (activeTransition === transition) activeTransition = null;
-        });
-
-        transition.ready
-            .then(() => {
-                document.documentElement.animate(
-                    {
-                        clipPath: [
-                            `circle(0px at ${x}px ${y}px)`,
-                            `circle(${endRadius}px at ${x}px ${y}px)`
-                        ]
-                    },
-                    {
-                        duration: WAVE_DURATION_MS,
-                        easing: WAVE_EASING,
-                        pseudoElement: '::view-transition-new(root)'
-                    }
-                );
-            })
-            .catch(() => {
-                // The browser skipped the transition (e.g. the tab was
-                // backgrounded, or another transition was already running).
-                // apply() already ran as startViewTransition's callback, so
-                // the theme itself is still correct — we just lose the
-                // circle animation for this one switch.
-            });
         return;
     }
 
@@ -129,4 +111,74 @@ export function runThemeWave(origin: WaveOrigin | null, apply: () => void): void
     root.classList.add(CROSSFADE_CLASS);
     apply();
     window.setTimeout(() => root.classList.remove(CROSSFADE_CLASS), CROSSFADE_DURATION_MS);
+}
+
+/**
+ * Kicks off a single circular "wave" transition, growing a clip-path from
+ * `origin` until it covers the whole viewport.
+ *
+ * Split out of `runThemeWave` so that a queued restart (see above, after an
+ * in-flight transition is skipped) and a fresh call both funnel through the
+ * exact same startup logic — there is only one place that creates a
+ * `ViewTransition` and wires up its `ready`/`finished` handlers.
+ *
+ * Args:
+ *     origin: Viewport point the wave should spread outward from.
+ *     apply: Callback that flips the theme; passed straight through to
+ *         `startViewTransition` so the browser can snapshot the before/after
+ *         states around it.
+ */
+function startWave(origin: WaveOrigin, apply: () => void): void {
+    const doc = document as DocumentWithViewTransitions;
+    if (typeof doc.startViewTransition !== 'function') {
+        apply();
+        return;
+    }
+
+    const {x, y} = origin;
+    // Use visualViewport for more accurate dimensions on mobile
+    // (address bar hiding/showing changes innerHeight during animation)
+    const vv = window.visualViewport;
+    const width = vv ? vv.width : window.innerWidth;
+    const height = vv ? vv.height : window.innerHeight;
+    const endRadius = computeCoverRadius(x, y, width, height);
+
+    let transition: ViewTransition;
+    try {
+        transition = doc.startViewTransition(apply);
+    } catch {
+        // Extremely defensive: if the browser advertises the API but
+        // throws anyway, just apply the change directly.
+        apply();
+        return;
+    }
+
+    activeTransition = transition;
+    transition.finished.finally(() => {
+        if (activeTransition === transition) activeTransition = null;
+    });
+
+    transition.ready
+        .then(() => {
+            document.documentElement.animate(
+                {
+                    clipPath: [
+                        `circle(0px at ${x}px ${y}px)`,
+                        `circle(${endRadius}px at ${x}px ${y}px)`
+                    ]
+                },
+                {
+                    duration: WAVE_DURATION_MS,
+                    easing: WAVE_EASING,
+                    pseudoElement: '::view-transition-new(root)'
+                }
+            );
+        })
+        .catch(() => {
+            // The browser skipped the transition (e.g. the tab was
+            // backgrounded, or another transition was already running).
+            // apply() already ran as startViewTransition's callback, so
+            // the theme itself is still correct — we just lose the
+            // circle animation for this one switch.
+        });
 }
