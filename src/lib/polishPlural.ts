@@ -19,3 +19,11 @@ export function pytanieForm(n: number): string {
 export function zostaloForm(n: number): string {
     return pytanieForm(n) === 'pytania' ? 'Zostały' : 'Zostało';
 }
+
+/**
+ * Matching verb agreement for "czekać" (to be waiting) with a pytanie count,
+ * e.g. "Czeka 1 pytanie", "Czekają 2 pytania", "Czekają 5 pytań".
+ */
+export function czekaForm(n: number): string {
+    return pytanieForm(n) === 'pytanie' ? 'Czeka' : 'Czekają';
+}

@@ -3,7 +3,7 @@
 	import type {SetType} from '$lib/types';
 	import {ArrowRight, Plus, Star} from '@lucide/svelte';
 	import {getDeviceId} from '$lib/deviceId';
-	import {pytanieForm} from '$lib/polishPlural';
+	import {czekaForm, pytanieForm} from '$lib/polishPlural';
 
 	let { data } = $props();
 
@@ -45,7 +45,7 @@
 				<p class="eyebrow mono">powtórki</p>
 				<h1>Powtórz to, co Ci nie idzie</h1>
 				<p class="hero-sub">
-					Czeka {dueCount} {pytanieForm(dueCount)} z Twoich wcześniejszych błędów, dobranych
+					{czekaForm(dueCount)} {dueCount} {pytanieForm(dueCount)} z Twoich wcześniejszych błędów, dobranych
 					automatycznie.
 				</p>
 			</div>
