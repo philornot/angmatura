@@ -1,7 +1,16 @@
 <script lang="ts">
 	import '../app.css';
+	import {initTheme} from '$lib/theme.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	let { children } = $props();
+
+	// $effect only ever runs in the browser (never during SSR), so this is a
+	// safe place to touch localStorage/matchMedia/document without an
+	// explicit browser guard.
+	$effect(() => {
+		initTheme();
+	});
 </script>
 
 <div class="shell">
@@ -9,6 +18,7 @@
 		<a href="/" class="wordmark">
 			<span class="wordmark-main">angmatura</span>
 		</a>
+		<ThemeToggle/>
 	</header>
 
 	<main>
@@ -25,6 +35,10 @@
 
 	.masthead {
 		padding: 14px 20px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 	}
 
 	.wordmark {

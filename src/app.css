@@ -10,6 +10,7 @@
 :root {
 	--paper: #eef1f2;
 	--paper-raised: #ffffff;
+	--surface-soft: #eef0f2;
 	--ink: #1c2430;
 	--ink-soft: #4a535e;
 	--muted: #737d82;
@@ -25,6 +26,11 @@
 	--incorrect-soft: #fbe8e6;
 	--highlight: #f0b429;
 
+	--badge-grammar-bg: #eef3e3;
+	--badge-grammar-ink: #4a6b1f;
+	--badge-translation-bg: #f6e9df;
+	--badge-translation-ink: #8a4a1f;
+
 	--radius-sm: 8px;
 	--radius-md: 14px;
 	--radius-lg: 20px;
@@ -38,6 +44,46 @@
 	--tap-min: 44px;
 
 	color-scheme: light;
+}
+
+/*
+	Dark mode — "marked exam paper, after dark". Same design language, tuned
+	for long study sessions: no pure black/white (softer on the eyes and on
+	OLED screens), a calmer ink-blue accent bumped up in lightness so it still
+	reads as "the same blue" against a dark page, and softened correct/
+	incorrect hues so right/wrong feedback doesn't glare at 11pm.
+
+	Applied via an attribute selector (not :root) on purpose, so the same
+	rule also re-themes a cloned subtree used by the no-JS-API transition
+	fallback in themeTransition.ts.
+*/
+[data-theme='dark'] {
+	--paper: #10141a;
+	--paper-raised: #1a1f27;
+	--surface-soft: #232a33;
+	--ink: #e7e9ec;
+	--ink-soft: #aab1ba;
+	--muted: #7c8590;
+	--rule: #2b323c;
+
+	--accent: #4d72c9;
+	--accent-soft: #1c2740;
+	--accent-ink: #a9c4f5;
+
+	--correct: #5fbf8b;
+	--correct-soft: #16241d;
+	--incorrect: #e2776b;
+	--incorrect-soft: #2c1c1a;
+	--highlight: #e6b23f;
+
+	--badge-grammar-bg: #1e2a18;
+	--badge-grammar-ink: #a3c97a;
+	--badge-translation-bg: #2c2015;
+	--badge-translation-ink: #e2a877;
+
+	--shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 8px 28px -12px rgba(0, 0, 0, 0.6);
+
+	color-scheme: dark;
 }
 
 * {
@@ -58,6 +104,48 @@ body {
 	line-height: 1.5;
 	-webkit-font-smoothing: antialiased;
 	min-height: 100dvh;
+}
+
+/* ---------- theme switch: the "wave" transition ---------- */
+
+/*
+	Primary path (Chrome/Edge/Safari 18+/Firefox 144+): the whole page is
+	swapped inside document.startViewTransition(). The browser snapshots the
+	before/after states for us; we just clip the "new" snapshot to a circle
+	that themeTransition.ts grows from the click position via a WAAPI
+	animation, so the new theme visibly washes outward from the button.
+	The default cross-fade is switched off here so only that circle reveal
+	is visible — no double animation.
+*/
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+	z-index: 1;
+}
+
+::view-transition-new(root) {
+	z-index: 2;
+}
+
+/*
+	Fallback path (older browsers with no View Transitions support, or
+	prefers-reduced-motion off but API missing): themeTransition.ts adds this
+	class for ~500ms while it flips data-theme, turning every colour swap
+	into a soft crossfade instead of an instant jump. No spreading circle
+	here, but it still feels considered rather than jarring.
+*/
+.theme-crossfade,
+.theme-crossfade * {
+	transition: background-color 0.45s ease,
+	color 0.45s ease,
+	border-color 0.45s ease,
+	box-shadow 0.45s ease,
+	fill 0.45s ease,
+	stroke 0.45s ease !important;
 }
 
 h1,

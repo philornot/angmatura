@@ -4,6 +4,27 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="theme-color" content="#eef1f2" />
+		<script>
+			// Runs before anything is painted, so the page never flashes the
+			// wrong theme while the rest of the app boots. Kept intentionally
+			// tiny and dependency-free — it has to run synchronously, blocking,
+			// before first paint.
+			(function () {
+				try {
+					var stored = localStorage.getItem('angmatura-theme');
+					var theme =
+							stored === 'light' || stored === 'dark'
+									? stored
+									: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+											? 'dark'
+											: 'light';
+					document.documentElement.setAttribute('data-theme', theme);
+				} catch (e) {
+					// localStorage/matchMedia unavailable — the app falls back to
+					// the light theme defined on :root, which is still correct.
+				}
+			})();
+		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link

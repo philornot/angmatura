@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { SetType } from '$lib/types';
+    import type {SetType} from '$lib/types';
 
-	let { type }: { type: SetType } = $props();
+    let { type }: { type: SetType } = $props();
 
 	const LABELS: Record<SetType, string> = {
 		kwt: 'KWT',
@@ -27,12 +27,12 @@
 	}
 
 	.badge[data-type='grammar'] {
-		background: #eef3e3;
-		color: #4a6b1f;
+        background: var(--badge-grammar-bg);
+        color: var(--badge-grammar-ink);
 	}
 
 	.badge[data-type='translation'] {
-		background: #f6e9df;
-		color: #8a4a1f;
+        background: var(--badge-translation-bg);
+        color: var(--badge-translation-ink);
 	}
 </style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import {page} from '$app/state';
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
 
 	let { data } = $props();
@@ -141,7 +141,7 @@
 		padding: 8px 10px;
 		border-radius: var(--radius-sm);
 		border: 1px solid var(--accent);
-		background: var(--bg, #fff);
+		background: var(--paper-raised);
 		color: var(--ink);
 		font-size: 13px;
 	}
