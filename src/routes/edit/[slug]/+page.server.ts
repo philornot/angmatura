@@ -48,6 +48,22 @@ export const actions: Actions = {
 		if (!set) error(404, 'Nie znaleziono zestawu.');
 
 		const form = await request.formData();
+		const deviceId = String(form.get('deviceId') ?? '').trim() || null;
+
+		// `load()` already keeps a non-owner off the original in the normal
+		// browser flow (it forks and redirects them before this form ever
+		// renders). But `save` is a POST to the same route, and SvelteKit
+		// runs actions independently of `load` — nothing stops a request
+		// from hitting `?/save` directly with an arbitrary slug, bypassing
+		// that redirect entirely. A public set's slug isn't secret (it's
+		// exactly the URL of the publicly listed set), so without this check
+		// anyone could overwrite someone else's original in place. Private
+		// sets keep the existing "the link itself is the authorization"
+		// model — only public sets need the device id to match the owner.
+		if (set.isPublic && !isSetOwner(set, deviceId)) {
+			return fail(403, {message: 'Nie możesz edytować tego zestawu bezpośrednio — zrób jego kopię.'});
+		}
+
 		const title = String(form.get('title') ?? '').trim();
 		const sourceLabel = String(form.get('sourceLabel') ?? '').trim() || null;
 		const isPublic = form.get('isPublic') === 'on';

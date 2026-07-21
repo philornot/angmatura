@@ -159,6 +159,7 @@
 		</button>
 
 		<input type="hidden" name="questions" value={JSON.stringify(questions)} />
+		<input name="deviceId" type="hidden" value={deviceId}/>
 
 		<button type="submit" class="btn btn-primary btn-block" disabled={submitting || questions.length === 0}>
 			{submitting ? 'Zapisuję…' : 'Zapisz zmiany'}
