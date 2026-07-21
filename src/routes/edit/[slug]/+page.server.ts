@@ -86,7 +86,7 @@ export const actions: Actions = {
 		} catch (err) {
 			console.error('Failed to save set', set.id, err);
 			return fail(500, {
-				message: 'Nie udało się zapisać zmian. Formularz nie został wyczyszczony — spróbuj ponownie.'
+				message: 'Nie udało się zapisać zmian. Formularz nie został wyczyszczony, spróbuj ponownie.'
 			});
 		}
 
