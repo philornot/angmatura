@@ -27,3 +27,17 @@ export function zostaloForm(n: number): string {
 export function czekaForm(n: number): string {
     return pytanieForm(n) === 'pytanie' ? 'Czeka' : 'Czekają';
 }
+
+/**
+ * Polish plural rule for "zestaw" (set/worksheet):
+ *   1        -> zestaw
+ *   2-4      -> zestawy   (except 12-14, which follow the 5+ rule)
+ *   5+ / 0   -> zestawów
+ */
+export function zestawForm(n: number): string {
+    if (n === 1) return 'zestaw';
+    const lastDigit = n % 10;
+    const lastTwo = n % 100;
+    if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return 'zestawy';
+    return 'zestawów';
+}

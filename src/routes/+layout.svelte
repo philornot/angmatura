@@ -2,6 +2,7 @@
 	import '../app.css';
 	import {initTheme} from '$lib/theme.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import {page} from '$app/state';
 
 	let { children } = $props();
 
@@ -18,6 +19,11 @@
 		<a href="/" class="wordmark">
 			<span class="wordmark-main">angmatura</span>
 		</a>
+		<nav class="nav">
+			<a aria-current={page.url.pathname === '/my-sets' ? 'page' : undefined} class="nav-link" href="/my-sets">
+				Moje zestawy
+			</a>
+		</nav>
 		<ThemeToggle/>
 	</header>
 
@@ -50,6 +56,31 @@
 		letter-spacing: 0.01em;
 		color: var(--ink);
 		text-decoration: none;
+	}
+
+	.nav {
+		flex: 1;
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.nav-link {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--ink-soft);
+		text-decoration: none;
+		padding: 8px 12px;
+		border-radius: var(--radius-sm);
+	}
+
+	.nav-link:hover {
+		background: var(--accent-soft);
+		color: var(--accent-ink);
+	}
+
+	.nav-link[aria-current='page'] {
+		color: var(--accent-ink);
+		background: var(--accent-soft);
 	}
 
 	main {

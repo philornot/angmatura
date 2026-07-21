@@ -1,7 +1,8 @@
 <script lang="ts">
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
+	import FloatingCreateButton from '$lib/components/FloatingCreateButton.svelte';
 	import type {SetType} from '$lib/types';
-	import {ArrowRight, Plus, Star} from '@lucide/svelte';
+	import {ArrowRight, Star} from '@lucide/svelte';
 	import {getDeviceId} from '$lib/deviceId';
 	import {czekaForm, pytanieForm} from '$lib/polishPlural';
 
@@ -104,7 +105,7 @@
 	{/if}
 
 	<footer class="footer">
-		<a href="/create" class="btn btn-ghost"><Plus size={16} aria-hidden="true" /> Stwórz nowy zestaw</a>
+		<FloatingCreateButton href="/create"/>
 	</footer>
 </div>
 

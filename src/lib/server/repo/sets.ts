@@ -58,6 +58,23 @@ export function getAllSets(): SetSummary[] {
 	return rows.map(toSummary);
 }
 
+/**
+ * Returns every set created from `deviceId`'s browser (the "quiet account"
+ * system — see `$lib/deviceId`), newest first. Includes both public and
+ * private sets, since ownership — not visibility — is what matters here.
+ * A blank/missing deviceId always yields an empty list rather than every
+ * ownerless set, since `creator_device_id IS NULL` is "unknown owner", not
+ * "owned by nobody in particular".
+ */
+export function getSetsByCreator(deviceId: string | null | undefined): SetSummary[] {
+	if (!deviceId) return [];
+	const rows = db
+		.prepare(`${WITH_COUNT_SELECT} WHERE creator_device_id = ? ORDER BY created_at DESC`)
+		.all(deviceId) as SetRow[];
+	return rows.map(toSummary);
+}
+
+
 /** Looks up a set by its permanent random slug only (used by /edit, which always operates on the canonical link). */
 export function getSetBySlug(slug: string): SetSummary | null {
 	const row = db.prepare(`${WITH_COUNT_SELECT} WHERE slug = ?`).get(slug) as SetRow | undefined;
