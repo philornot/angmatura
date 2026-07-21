@@ -96,4 +96,15 @@ export function initSchema(db: Database.Database) {
 			ADD COLUMN creator_device_id TEXT`);
 		db.exec(`CREATE INDEX IF NOT EXISTS idx_sets_creator_device_id ON sets (creator_device_id)`);
 	}
+	// Soft-delete ("trash") support: a set with `deleted_at` set is hidden
+	// from every normal query (public listing, "my sets", direct /set/ view,
+	// admin's main list) but its row — and its questions, via the existing
+	// ON DELETE CASCADE only firing on a *hard* delete — stays intact for 30
+	// days so an admin can restore it from /admin/trash. NULL means "not in
+	// the trash", which is the state of every pre-existing row.
+	if (!columns.some((c) => c.name === 'deleted_at')) {
+		db.exec(`ALTER TABLE sets
+			ADD COLUMN deleted_at DATETIME`);
+		db.exec(`CREATE INDEX IF NOT EXISTS idx_sets_deleted_at ON sets (deleted_at)`);
+	}
 }

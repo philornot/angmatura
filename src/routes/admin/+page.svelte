@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import {enhance} from '$app/forms';
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
-	import { Star } from '@lucide/svelte';
+	import {Star, Trash2} from '@lucide/svelte';
 
 	let { data, form } = $props();
 </script>
@@ -11,7 +11,15 @@
 </svelte:head>
 
 <div class="container page">
-	<h1>Panel administratora</h1>
+	<div class="header-row">
+		<h1>Panel administratora</h1>
+		{#if data.authed}
+			<a href="/admin/trash" class="btn btn-secondary trash-link" title="Kosz">
+				<Trash2 size={16} aria-hidden="true"/>
+				Kosz
+			</a>
+		{/if}
+	</div>
 
 	{#if !data.authed}
 		<form method="POST" action="?/login" use:enhance class="login card">
@@ -85,7 +93,7 @@
 							method="POST"
 							action="?/delete"
 							use:enhance={({ cancel }) => {
-								if (!confirm(`Usunąć „${set.title}” na stałe?`)) cancel();
+								if (!confirm(`Przenieść „${set.title}” do kosza? Będzie można to cofnąć przez 30 dni.`)) cancel();
 							}}
 						>
 							<input type="hidden" name="id" value={set.id} />
@@ -104,6 +112,19 @@
 		flex-direction: column;
 		gap: 16px;
 		padding-top: 8px;
+	}
+
+	.header-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.trash-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 	}
 
 	h1 {

@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
-import { db } from './db';
+import {db} from './db';
+
+export const ADMIN_COOKIE_NAME = 'angmatura_admin';
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days, matches the old cookie maxAge
 
@@ -28,6 +30,13 @@ export function isValidAdminSession(token: string | undefined): boolean {
 		return false;
 	}
 	return true;
+}
+
+/** Convenience wrapper reading the admin session straight off the request's
+ *  cookies — shared by every admin-area route (`/admin`, `/admin/trash`) so
+ *  they all agree on the same cookie name and validity check. */
+export function isAdminAuthed(cookies: import('@sveltejs/kit').Cookies): boolean {
+	return isValidAdminSession(cookies.get(ADMIN_COOKIE_NAME));
 }
 
 /** Removes a session token (logout). */

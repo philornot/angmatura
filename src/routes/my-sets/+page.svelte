@@ -1,12 +1,12 @@
 <script lang="ts">
-	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
-	import FloatingCreateButton from '$lib/components/FloatingCreateButton.svelte';
-	import type {SetSummary, SetType} from '$lib/types';
-	import {getDeviceId} from '$lib/deviceId';
-	import {zestawForm} from '$lib/polishPlural';
-	import {ArrowLeft, Info, Lock} from '@lucide/svelte';
+    import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
+    import FloatingCreateButton from '$lib/components/FloatingCreateButton.svelte';
+    import type {SetSummary, SetType} from '$lib/types';
+    import {getDeviceId} from '$lib/deviceId';
+    import {zestawForm} from '$lib/polishPlural';
+    import {ArrowLeft, Info, Lock, Trash2} from '@lucide/svelte';
 
-	const SECTION_TITLES: Record<SetType, string> = {
+    const SECTION_TITLES: Record<SetType, string> = {
         kwt: 'Key Word Transformations',
         grammar: 'Gramatykalizacja',
         translation: 'Tłumaczenia'
@@ -16,6 +16,9 @@
 
     let loading = $state(true);
     let sets = $state<SetSummary[]>([]);
+    // Tracks which set is mid-delete so its button can show a busy state and
+    // can't be double-submitted while the request is in flight.
+    let deletingId = $state<number | null>(null);
 
     function groupByType(list: SetSummary[]): Record<SetType, SetSummary[]> {
         const groups: Record<SetType, SetSummary[]> = {kwt: [], grammar: [], translation: []};
@@ -25,10 +28,7 @@
 
     let groups = $derived(groupByType(sets));
 
-    // Same pattern as the review page: the device id only exists in
-    // localStorage, so we don't know which sets are "ours" during SSR — fetch
-    // them client-side once we can read the id.
-    $effect(() => {
+    function loadSets() {
         const deviceId = getDeviceId();
         if (!deviceId) {
             loading = false;
@@ -43,7 +43,40 @@
             .catch(() => {
                 loading = false;
             });
+    }
+
+    // Same pattern as the review page: the device id only exists in
+    // localStorage, so we don't know which sets are "ours" during SSR — fetch
+    // them client-side once we can read the id.
+    $effect(() => {
+        loadSets();
     });
+
+    // Moves a set to the trash rather than deleting it outright — it can
+    // still be recovered by an admin within 30 days (see /admin/trash). We
+    // optimistically drop it from the visible list on success rather than
+    // re-fetching the whole page.
+    async function trashSet(set: SetSummary) {
+        if (!confirm(`Przenieść „${set.title}” do kosza? Będzie można to cofnąć przez 30 dni.`)) return;
+
+        deletingId = set.id;
+        try {
+            const res = await fetch(`/api/sets/${set.id}/trash`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({deviceId: getDeviceId()})
+            });
+            if (res.ok) {
+                sets = sets.filter((s) => s.id !== set.id);
+            } else {
+                alert('Nie udało się usunąć zestawu. Spróbuj ponownie.');
+            }
+        } catch {
+            alert('Nie udało się usunąć zestawu. Spróbuj ponownie.');
+        } finally {
+            deletingId = null;
+        }
+    }
 </script>
 
 <svelte:head>
@@ -86,7 +119,7 @@
                     </div>
                     <ul class="set-list">
                         {#each groups[type] as set (set.id)}
-                            <li>
+                            <li class="set-row">
                                 <a href="/set/{set.slug}" class="set-card card">
                                     {#if !set.isPublic}
                                         <Lock size={14} aria-hidden="true" class="lock-icon"/>
@@ -97,6 +130,15 @@
                                     {/if}
                                     <span class="set-count mono">{set.questionCount} pytań</span>
                                 </a>
+                                <button
+                                        type="button"
+                                        class="btn btn-ghost delete-btn"
+                                        title="Przenieś do kosza"
+                                        disabled={deletingId === set.id}
+                                        onclick={() => trashSet(set)}
+                                >
+                                    <Trash2 size={16} aria-hidden="true"/>
+                                </button>
                             </li>
                         {/each}
                     </ul>
@@ -180,6 +222,27 @@
         text-decoration: none;
         color: var(--ink);
         border-left: 4px solid var(--rule);
+        flex: 1;
+    }
+
+    .set-row {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .delete-btn {
+        flex-shrink: 0;
+        color: var(--muted);
+    }
+
+    .delete-btn:hover {
+        color: var(--incorrect);
+    }
+
+    .delete-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
     }
 
     .set-card:hover {

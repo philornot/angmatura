@@ -1,11 +1,17 @@
-import { fail } from '@sveltejs/kit';
-import type { PageServerLoad, Actions } from './$types';
-import { env } from '$env/dynamic/private';
-import { getAllSets, updateSetMeta, deleteSet, setCustomSlug } from '$lib/server/repo/sets';
-import { createAdminSession, destroyAdminSession, isValidAdminSession, verifyAdminPassword } from '$lib/server/adminAuth';
-import { checkRateLimit, getClientIp, resetRateLimit } from '$lib/server/rateLimit';
+import {fail} from '@sveltejs/kit';
+import type {Actions, PageServerLoad} from './$types';
+import {env} from '$env/dynamic/private';
+import {getAllSets, setCustomSlug, trashSetAsAdmin, updateSetMeta} from '$lib/server/repo/sets';
+import {
+	ADMIN_COOKIE_NAME,
+	createAdminSession,
+	destroyAdminSession,
+	isAdminAuthed,
+	verifyAdminPassword
+} from '$lib/server/adminAuth';
+import {checkRateLimit, getClientIp, resetRateLimit} from '$lib/server/rateLimit';
 
-const COOKIE_NAME = 'angmatura_admin';
+const COOKIE_NAME = ADMIN_COOKIE_NAME;
 
 // A public Cloudflare Tunnel + a password that's easy to leave as the
 // example default (`change-me`) means the login form needs its own
@@ -13,12 +19,8 @@ const COOKIE_NAME = 'angmatura_admin';
 const LOGIN_ATTEMPT_LIMIT = 5;
 const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 
-function isAuthed(cookies: import('@sveltejs/kit').Cookies): boolean {
-	return isValidAdminSession(cookies.get(COOKIE_NAME));
-}
-
 export const load: PageServerLoad = ({ cookies }) => {
-	if (!isAuthed(cookies)) {
+	if (!isAdminAuthed(cookies)) {
 		return { authed: false as const };
 	}
 	return { authed: true as const, sets: getAllSets() };
@@ -66,7 +68,7 @@ export const actions: Actions = {
 	},
 
 	togglePublic: async ({ request, cookies }) => {
-		if (!isAuthed(cookies)) return fail(401, { message: 'Zaloguj się ponownie.' });
+		if (!isAdminAuthed(cookies)) return fail(401, {message: 'Zaloguj się ponownie.'});
 		const form = await request.formData();
 		const id = Number(form.get('id'));
 		const isPublic = form.get('isPublic') === 'true';
@@ -75,7 +77,7 @@ export const actions: Actions = {
 	},
 
 	toggleFeatured: async ({ request, cookies }) => {
-		if (!isAuthed(cookies)) return fail(401, { message: 'Zaloguj się ponownie.' });
+		if (!isAdminAuthed(cookies)) return fail(401, {message: 'Zaloguj się ponownie.'});
 		const form = await request.formData();
 		const id = Number(form.get('id'));
 		const isFeatured = form.get('isFeatured') === 'true';
@@ -84,7 +86,7 @@ export const actions: Actions = {
 	},
 
 	setCustomSlug: async ({ request, cookies }) => {
-		if (!isAuthed(cookies)) return fail(401, { message: 'Zaloguj się ponownie.' });
+		if (!isAdminAuthed(cookies)) return fail(401, {message: 'Zaloguj się ponownie.'});
 		const form = await request.formData();
 		const id = Number(form.get('id'));
 		const raw = String(form.get('customSlug') ?? '');
@@ -101,11 +103,15 @@ export const actions: Actions = {
 		return { customSlugSet: true };
 	},
 
+	/** Moves a set to the trash — same soft-delete used by the "my sets"
+	 *  self-service delete button. Recoverable from /admin/trash for
+	 *  TRASH_RETENTION_DAYS days; not an immediate hard delete. */
 	delete: async ({ request, cookies }) => {
-		if (!isAuthed(cookies)) return fail(401, { message: 'Zaloguj się ponownie.' });
+		if (!isAdminAuthed(cookies)) return fail(401, {message: 'Zaloguj się ponownie.'});
 		const form = await request.formData();
 		const id = Number(form.get('id'));
-		deleteSet(id);
+		const result = trashSetAsAdmin(id);
+		if (!result.ok) return fail(404, {message: 'Nie znaleziono zestawu.'});
 		return { deleted: true };
 	}
 };
