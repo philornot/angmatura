@@ -58,18 +58,19 @@ const SET_RESPONSE_SCHEMA = {
 					correctAnswer: {
 						type: Type.STRING,
 						description:
-							'The words that fill the gap. Wrap optional fragments in parentheses, e.g. "so noisy outside (that)".'
+							'The single main answer that fills the gap. Only use parentheses here for a fragment that can be genuinely DROPPED while the rest still stands alone as correct, e.g. "so noisy outside (that)" (both "so noisy outside" and "so noisy outside that" are valid). Never use parentheses to list alternative wordings — those go in alternativeAnswers as full separate strings instead.'
 					},
 					alternativeAnswers: {
 						type: Type.ARRAY,
 						items: { type: Type.STRING },
-						description: 'Other accepted phrasings, if the answer key lists any. Otherwise empty.'
+						description:
+							'Other accepted phrasings, each written out IN FULL as its own array entry — never abbreviated with parentheses. E.g. if the answer key prints "was being served (by them / to me) / was being delivered", that is THREE full alternatives: "was being served by them", "was being served to me", "was being delivered" (with correctAnswer holding the base form "was being served"). Otherwise empty.'
 					},
 					exampleWrongAnswers: {
 						type: Type.ARRAY,
 						items: {type: Type.STRING},
 						description:
-							'Known INCORRECT answers explicitly listed on the worksheet/answer key (e.g. common mistakes the teacher marked as wrong, or distractor answers shown for comparison). Do NOT invent these — only include them if they are actually printed on the sheet. Otherwise empty.'
+							'Known INCORRECT answers explicitly listed on the worksheet/answer key (e.g. common mistakes the teacher marked as wrong, or distractor answers shown for comparison), each written out as its own full string — no compressed slash/parenthesis notation. Do NOT invent these — only include them if they are actually printed on the sheet. Otherwise empty.'
 					},
 					maxWords: {
 						type: Type.NUMBER,
@@ -97,9 +98,13 @@ Identify the exercise type:
 - "translation": a Polish sentence fragment (or full sentence) that must be translated into English to fill a gap in an English sentence.
 
 For each question, transcribe the source text exactly as printed. Represent the gap in "sentence2WithGap" using six underscores: ______
-If the official answer key on the screenshots allows alternative phrasings, list them in alternativeAnswers. If part of the correct answer is optional, wrap that part in parentheses instead of duplicating the whole answer, e.g. "so noisy outside (that)".
 
-If the worksheet or answer key also shows known INCORRECT answers — for example common mistakes crossed out or annotated by a teacher, or distractor answers printed for comparison — transcribe them into exampleWrongAnswers. Only include an answer here if it is actually visible on the sheet as wrong; never guess or invent plausible mistakes yourself.
+Answer keys often compress several accepted phrasings using slashes and parentheses, e.g. "was being served (by them / to me) / was being delivered / was being brought". Do NOT copy that compressed notation as-is. Instead:
+- Put ONE base form in correctAnswer, e.g. "was being served".
+- Expand every other accepted phrasing into its own COMPLETE string in alternativeAnswers — never leave a dangling parenthesis or a "/" inside a single entry. For the example above, alternativeAnswers would be: ["was being served by them", "was being served to me", "was being delivered", "was being brought"].
+- Only keep a "(word)" parenthetical inside correctAnswer itself for a fragment that can be dropped while the remainder is still a complete, independently-correct answer (e.g. "so noisy outside (that)"). This is rare — most answer-key parentheses are actually listing alternatives, not marking something optional, so expand them into alternativeAnswers by default.
+
+If the worksheet or answer key also shows known INCORRECT answers — for example common mistakes crossed out or annotated by a teacher, or distractor answers shown for comparison — transcribe them into exampleWrongAnswers, each as its own full string, with the same expansion rule (no compressed slash/parenthesis notation). Only include an answer here if it is actually visible on the sheet as wrong; never guess or invent plausible mistakes yourself.
 
 Return only the structured data — no commentary.`;
 
