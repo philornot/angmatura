@@ -82,7 +82,7 @@
 </script>
 
 <svelte:head>
-	<title>Edytuj — {set.title}</title>
+	<title>Edytuj: {set.title}</title>
 </svelte:head>
 
 <div class="container page">
@@ -90,7 +90,7 @@
 	<h1>Edytuj zestaw</h1>
 	{#if data.isOwner}
 		<div class="owner-note">
-			<span>To Twój oryginalny zestaw — zmiany zapisują się od razu w nim.</span>
+			<span>To oryginalny zestaw.</span>
 			{#if data.offerFork}
 				<form
 						method="POST"
@@ -106,13 +106,13 @@
 				>
 					<input type="hidden" name="deviceId" value={deviceId}/>
 					<button type="submit" class="fork-link" disabled={forking}>
-						{forking ? 'tworzę kopię…' : 'zrób kopię zamiast tego'}
+						{forking ? 'Tworzę kopię…' : 'Zamiast tego stwórz kopię (fork)'}
 					</button>
 				</form>
 			{/if}
 		</div>
 	{:else}
-		<p class="private-note">To Twoja prywatna kopia — zmiany nie dotyczą oryginału.</p>
+		<p class="private-note">To Twoja prywatna kopia. Zmiany nie wpłyną na oryginał.</p>
 	{/if}
 
 	{#if form?.message}
