@@ -126,6 +126,38 @@ describe('edit/[slug] authorization (integration, real SQLite)', () => {
         expect(getQuestionsForSet(afterAttempt!.id).map((q) => q.correctAnswer)).toEqual(['is']);
     });
 
+    it("load() reports a fork as a fork, not as the original, when its owner (who just forked it) revisits its edit page", async () => {
+        const {actions, load} = await import('./+page.server');
+
+        // Owner explicitly forks their own set via the "make a copy" banner.
+        const forkForm = makeFormData({deviceId: 'owner-device'});
+        let redirected: unknown;
+        try {
+            await actions.fork({
+                params: {slug: 'public-set'},
+                request: {formData: async () => forkForm} as unknown as Request
+            } as Parameters<typeof actions.fork>[0]);
+        } catch (e) {
+            redirected = e;
+        }
+        expect((redirected as { status: number } | undefined)?.status).toBe(303);
+        const forkedSlug = (redirected as { location: string }).location.replace('/edit/', '');
+
+        // The owner now lands on the fork's own edit page (still their device).
+        const result = await load({
+            params: {slug: forkedSlug},
+            cookies: {get: () => 'owner-device'}
+        } as unknown as Parameters<typeof load>[0]);
+
+        // It must NOT claim to be the original, and must not offer to fork
+        // again — this is the bug: previously isFork didn't exist and
+        // offerFork was `true` purely from isOwner, so the freshly-forked
+        // "... (kopia)" set still showed "To oryginalny zestaw."
+        expect(result!.isFork).toBe(true);
+        expect(result!.offerFork).toBe(false);
+        expect(result!.set.title).toBe('Original title (kopia)');
+    });
+
     it('actions.save still lets the real owner save their own set', async () => {
         const {actions} = await import('./+page.server');
 

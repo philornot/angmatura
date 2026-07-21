@@ -34,11 +34,19 @@ export const load: PageServerLoad = ({params, cookies}) => {
 	}
 
 	const questions = getQuestionsForSet(set.id);
-	// Only offer the "make a fork" banner for the owner's own set — anyone
-	// else already got auto-forked above, and a private set with no visible
-	// owner match is being edited via its private link as before.
-	const offerFork = isOwner;
-	return {set, questions, isOwner, offerFork, deviceId};
+	// A set is a fork if it was created from another one — this stays true
+	// forever, regardless of who currently owns/edits it. Without this check,
+	// an owner who forks their own set lands back on this same page owning
+	// the *new* set too, and would incorrectly see it labelled as "the
+	// original" (see bug: fork banner + "this is the original" text both
+	// showing on a set whose title already says "(kopia)").
+	const isFork = set.parentSlug !== null;
+	// Only offer the "make a fork" banner for the owner's own original set —
+	// anyone else already got auto-forked above, a private set with no
+	// visible owner match is being edited via its private link as before,
+	// and a set that's already a fork doesn't need "make a fork of my fork".
+	const offerFork = isOwner && !isFork;
+	return {set, questions, isOwner, offerFork, isFork, deviceId};
 };
 
 export const actions: Actions = {

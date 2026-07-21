@@ -90,7 +90,11 @@
 	<h1>Edytuj zestaw</h1>
 	{#if data.isOwner}
 		<div class="owner-note">
-			<span>To oryginalny zestaw.</span>
+			{#if data.isFork}
+				<span>To Twoja kopia (fork) innego zestawu.</span>
+			{:else}
+				<span>To oryginalny zestaw.</span>
+			{/if}
 			{#if data.offerFork}
 				<form
 						method="POST"
