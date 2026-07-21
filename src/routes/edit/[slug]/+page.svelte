@@ -2,10 +2,20 @@
 	import {enhance} from '$app/forms';
 	import type {EditableQuestion} from '$lib/components/KwtQuestionEditor.svelte';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
+	import {getDeviceId} from '$lib/deviceId';
 	import {ArrowLeft, Plus} from '@lucide/svelte';
 
 	let { data, form } = $props();
 	let set = $derived(data.set);
+
+	// Used only to fill the fork form's hidden field, falling back to whatever
+	// `?d=` the page was already loaded with.
+	// svelte-ignore state_referenced_locally
+	let deviceId = $state(data.deviceId ?? '');
+	$effect(() => {
+		deviceId = getDeviceId();
+	});
+	let forking = $state(false);
 
 	function toEditable(q: (typeof data.questions)[number]): EditableQuestion {
 		return {
@@ -78,7 +88,32 @@
 <div class="container page">
 	<a href="/set/{set.slug}" class="back"><ArrowLeft size={14} aria-hidden="true" /> {set.title}</a>
 	<h1>Edytuj zestaw</h1>
-	<p class="private-note">To Twoja prywatna kopia — zmiany nie dotyczą oryginału.</p>
+	{#if data.isOwner}
+		<div class="owner-note">
+			<span>To Twój oryginalny zestaw — zmiany zapisują się od razu w nim.</span>
+			{#if data.offerFork}
+				<form
+						method="POST"
+						action="?/fork"
+						class="fork-form"
+						use:enhance={() => {
+						forking = true;
+						return async ({ update }) => {
+							await update();
+							forking = false;
+						};
+					}}
+				>
+					<input type="hidden" name="deviceId" value={deviceId}/>
+					<button type="submit" class="fork-link" disabled={forking}>
+						{forking ? 'tworzę kopię…' : 'zrób kopię zamiast tego'}
+					</button>
+				</form>
+			{/if}
+		</div>
+	{:else}
+		<p class="private-note">To Twoja prywatna kopia — zmiany nie dotyczą oryginału.</p>
+	{/if}
 
 	{#if form?.message}
 		<p class="error-banner">{form.message}</p>
@@ -157,6 +192,40 @@
 		font-size: 13px;
 		color: var(--muted);
 		margin-bottom: 8px;
+	}
+
+	.owner-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 6px;
+		font-size: 13px;
+		color: var(--muted);
+		margin-bottom: 8px;
+	}
+
+	.fork-form {
+		display: contents;
+	}
+
+	.fork-link {
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		font-size: 13px;
+		color: var(--muted);
+		text-decoration: underline;
+		cursor: pointer;
+	}
+
+	.fork-link:hover {
+		color: var(--ink-soft);
+	}
+
+	.fork-link:disabled {
+		cursor: default;
+		opacity: 0.6;
 	}
 
 	form {

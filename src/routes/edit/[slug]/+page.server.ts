@@ -1,30 +1,45 @@
-import { error, redirect, fail } from '@sveltejs/kit';
-import type { PageServerLoad, Actions } from './$types';
-import { getSetBySlugOrCustom, updateSetMeta } from '$lib/server/repo/sets';
-import { createSet } from '$lib/server/repo/sets';
-import { getQuestionsForSet, replaceQuestions, type NewQuestionInput } from '$lib/server/repo/questions';
+import {error, fail, redirect} from '@sveltejs/kit';
+import type {Actions, PageServerLoad} from './$types';
+import {createSet, getSetBySlugOrCustom, isSetOwner, updateSetMeta} from '$lib/server/repo/sets';
+import {getQuestionsForSet, type NewQuestionInput, replaceQuestions} from '$lib/server/repo/questions';
 
-export const load: PageServerLoad = ({ params }) => {
+export const load: PageServerLoad = ({params, url}) => {
 	const set = getSetBySlugOrCustom(params.slug);
 	if (!set) error(404, 'Nie znaleziono zestawu.');
 
-	if (set.isPublic) {
+	// The "quiet account" system: the edit link carries the visitor's
+	// anonymous device id as `?d=`. If it matches the set's recorded
+	// creator, this browser made the set — it can edit the original in
+	// place instead of always forking.
+	const deviceId = url.searchParams.get('d');
+	const isOwner = isSetOwner(set, deviceId);
+
+	if (set.isPublic && !isOwner) {
 		// Editing someone else's public set never mutates it in place — it forks
-		// a private copy under a new slug first (spec section 9).
+		// a private copy under a new slug first (spec section 9). The fork is
+		// attributed to the current visitor, so *they* can now edit it in place too.
 		const forked = createSet({
 			title: `${set.title} (kopia)`,
 			sourceLabel: set.sourceLabel,
 			type: set.type,
 			isPublic: false,
-			parentSlug: set.slug
+			parentSlug: set.slug,
+			creatorDeviceId: deviceId
 		});
 		const originalQuestions = getQuestionsForSet(set.id);
 		replaceQuestions(forked.id, originalQuestions);
-		redirect(303, `/edit/${forked.slug}`);
+		const forkedHref = deviceId
+			? `/edit/${forked.slug}?d=${encodeURIComponent(deviceId)}`
+			: `/edit/${forked.slug}`;
+		redirect(303, forkedHref);
 	}
 
 	const questions = getQuestionsForSet(set.id);
-	return { set, questions };
+	// Only offer the "make a fork" banner for the owner's own set — anyone
+	// else already got auto-forked above, and a private set with no visible
+	// owner match is being edited via its private link as before.
+	const offerFork = isOwner;
+	return {set, questions, isOwner, offerFork, deviceId};
 };
 
 export const actions: Actions = {
@@ -61,5 +76,32 @@ export const actions: Actions = {
 		}
 
 		return { message: null, saved: true };
+	},
+
+	/** Explicit fork action, offered as a banner to owners editing their own
+	 *  set — lets them experiment on a private copy without touching the
+	 *  original (spec: visible banner with a button). */
+	fork: async ({params, request}) => {
+		const set = getSetBySlugOrCustom(params.slug);
+		if (!set) error(404, 'Nie znaleziono zestawu.');
+
+		const form = await request.formData();
+		const deviceId = String(form.get('deviceId') ?? '').trim() || null;
+
+		const forked = createSet({
+			title: `${set.title} (kopia)`,
+			sourceLabel: set.sourceLabel,
+			type: set.type,
+			isPublic: false,
+			parentSlug: set.slug,
+			creatorDeviceId: deviceId
+		});
+		const originalQuestions = getQuestionsForSet(set.id);
+		replaceQuestions(forked.id, originalQuestions);
+
+		const forkedHref = deviceId
+			? `/edit/${forked.slug}?d=${encodeURIComponent(deviceId)}`
+			: `/edit/${forked.slug}`;
+		redirect(303, forkedHref);
 	}
 };

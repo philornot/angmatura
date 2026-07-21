@@ -4,9 +4,15 @@
 	import type {EditableQuestion} from '$lib/components/KwtQuestionEditor.svelte';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
 	import type {AiGeneratedSet, SetType} from '$lib/types';
+	import {getDeviceId} from '$lib/deviceId';
 	import {ArrowLeft, Plus} from '@lucide/svelte';
 
 	let { form } = $props();
+
+	// Tags this set with the anonymous device id at creation time, so its
+	// creator can later edit it in place (no forced fork) — the "quiet
+	// account" system.
+	let deviceId = $state('');
 
 	let ready = $state(false);
 	let title = $state('');
@@ -36,6 +42,7 @@
 			maxWords: q.maxWords ?? 0
 		}));
 		ready = true;
+		deviceId = getDeviceId();
 	});
 
 	function addQuestion() {
@@ -130,6 +137,7 @@
 			</button>
 
 			<input type="hidden" name="questions" value={JSON.stringify(questions)} />
+			<input type="hidden" name="deviceId" value={deviceId}/>
 
 			<button type="submit" class="btn btn-primary btn-block" disabled={submitting || questions.length === 0}>
 				{submitting ? 'Zapisuję…' : 'Zapisz zestaw'}

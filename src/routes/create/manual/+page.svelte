@@ -3,9 +3,19 @@
 	import type {EditableQuestion} from '$lib/components/KwtQuestionEditor.svelte';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
 	import type {SetType} from '$lib/types';
+	import {getDeviceId} from '$lib/deviceId';
 	import {ArrowLeft, Plus} from '@lucide/svelte';
 
 	let { form } = $props();
+
+	// Tags this set with the anonymous device id at creation time, so its
+	// creator can later edit it in place (no forced fork) — the "quiet
+	// account" system. Read client-side only; empty during SSR is fine, it's
+	// just left blank in the hidden field until the page hydrates.
+	let deviceId = $state('');
+	$effect(() => {
+		deviceId = getDeviceId();
+	});
 
 	let title = $state('');
 	let sourceLabel = $state('');
@@ -98,6 +108,7 @@
 		</button>
 
 		<input type="hidden" name="questions" value={JSON.stringify(questions)} />
+		<input name="deviceId" type="hidden" value={deviceId}/>
 
 		<button type="submit" class="btn btn-primary btn-block" disabled={submitting || questions.length === 0}>
 			{submitting ? 'Zapisuję…' : 'Zapisz zestaw'}

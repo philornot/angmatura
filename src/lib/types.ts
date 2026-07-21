@@ -11,6 +11,9 @@ export interface SetSummary {
 	isPublic: boolean;
 	isFeatured: boolean;
 	parentSlug: string | null;
+	/** Anonymous device id (see `$lib/deviceId`) of whoever created this set,
+	 *  or null if unknown/created before the "quiet account" system existed. */
+	creatorDeviceId: string | null;
 	createdAt: string;
 	questionCount: number;
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {page} from '$app/state';
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
+	import {getDeviceId} from '$lib/deviceId';
 
 	let { data } = $props();
 	let set = $derived(data.set);
@@ -8,6 +9,17 @@
 	let shareUrl = $derived(`${page.url.origin}/set/${set.slug}`);
 	let showShareBanner = $derived(page.url.searchParams.get('created') === '1' && !set.isPublic);
 	let copied = $state(false);
+
+	// The edit link carries the anonymous device id as a query param so the
+	// server can recognize "this browser created this set" and open the
+	// original for editing instead of forking a copy — the "quiet account"
+	// system. Read client-side only; falls back to a plain link during SSR,
+	// which still works (it just forks, same as an anonymous visitor).
+	let deviceId = $state('');
+	$effect(() => {
+		deviceId = getDeviceId();
+	});
+	let editHref = $derived(deviceId ? `/edit/${set.slug}?d=${encodeURIComponent(deviceId)}` : `/edit/${set.slug}`);
 
 	async function copyLink() {
 		try {
@@ -61,7 +73,7 @@
 		</a>
 	</div>
 
-	<a href="/edit/{set.slug}" class="edit-link">Edytuj / forkuj ten zestaw</a>
+	<a class="edit-link" href={editHref}>Edytuj / forkuj ten zestaw</a>
 </div>
 
 <style>

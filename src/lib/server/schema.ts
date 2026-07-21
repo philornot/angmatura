@@ -16,6 +16,7 @@ export function initSchema(db: Database.Database) {
 			is_public INTEGER NOT NULL DEFAULT 0,
 			is_featured INTEGER NOT NULL DEFAULT 0,
 			parent_slug TEXT,
+			creator_device_id TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 
@@ -85,5 +86,14 @@ export function initSchema(db: Database.Database) {
 	if (!columns.some((c) => c.name === 'custom_slug')) {
 		db.exec(`ALTER TABLE sets ADD COLUMN custom_slug TEXT`);
 		db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sets_custom_slug ON sets(custom_slug)`);
+	}
+	// `creator_device_id` powers the "quiet account" system: a set created by
+	// a given anonymous device id can be edited in place (no forced fork) by
+	// that same device later on. Nullable — older sets simply have no owner,
+	// so they keep behaving exactly as before (public ones always fork).
+	if (!columns.some((c) => c.name === 'creator_device_id')) {
+		db.exec(`ALTER TABLE sets
+			ADD COLUMN creator_device_id TEXT`);
+		db.exec(`CREATE INDEX IF NOT EXISTS idx_sets_creator_device_id ON sets (creator_device_id)`);
 	}
 }

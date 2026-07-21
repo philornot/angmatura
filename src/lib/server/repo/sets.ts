@@ -1,6 +1,6 @@
-import { db } from '../db';
-import type { SetSummary, SetType } from '$lib/types';
-import { generateUniqueSlug, isCustomSlugAvailable, normalizeCustomSlug } from './slug';
+import {db} from '../db';
+import type {SetSummary, SetType} from '$lib/types';
+import {generateUniqueSlug, isCustomSlugAvailable, normalizeCustomSlug} from './slug';
 
 interface SetRow {
 	id: number;
@@ -12,6 +12,7 @@ interface SetRow {
 	is_public: number;
 	is_featured: number;
 	parent_slug: string | null;
+	creator_device_id: string | null;
 	created_at: string;
 	question_count: number;
 }
@@ -27,6 +28,7 @@ function toSummary(row: SetRow): SetSummary {
 		isPublic: !!row.is_public,
 		isFeatured: !!row.is_featured,
 		parentSlug: row.parent_slug,
+		creatorDeviceId: row.creator_device_id,
 		createdAt: row.created_at,
 		questionCount: row.question_count
 	};
@@ -82,14 +84,18 @@ export interface NewSetInput {
 	isPublic?: boolean;
 	isFeatured?: boolean;
 	parentSlug?: string | null;
+	/** Anonymous device id of whoever created this set (see `$lib/deviceId`).
+	 *  Lets that same device edit the set in place later without forking —
+	 *  the "quiet account" system. Null/omitted for sets with no known owner. */
+	creatorDeviceId?: string | null;
 }
 
 export function createSet(input: NewSetInput): SetSummary {
 	const slug = generateUniqueSlug();
 	const result = db
 		.prepare(
-			`INSERT INTO sets (slug, title, source_label, type, is_public, is_featured, parent_slug)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`
+			`INSERT INTO sets (slug, title, source_label, type, is_public, is_featured, parent_slug, creator_device_id)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 		)
 		.run(
 			slug,
@@ -98,9 +104,15 @@ export function createSet(input: NewSetInput): SetSummary {
 			input.type,
 			input.isPublic ? 1 : 0,
 			input.isFeatured ? 1 : 0,
-			input.parentSlug ?? null
+			input.parentSlug ?? null,
+			input.creatorDeviceId ?? null
 		);
 	return getSetById(result.lastInsertRowid as number)!;
+}
+
+/** True if `deviceId` is a non-empty id matching this set's recorded creator. */
+export function isSetOwner(set: SetSummary, deviceId: string | null | undefined): boolean {
+	return !!deviceId && !!set.creatorDeviceId && set.creatorDeviceId === deviceId;
 }
 
 export function updateSetMeta(
