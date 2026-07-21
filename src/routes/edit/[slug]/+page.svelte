@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import {enhance} from '$app/forms';
+	import type {EditableQuestion} from '$lib/components/KwtQuestionEditor.svelte';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
-	import type { EditableQuestion } from '$lib/components/KwtQuestionEditor.svelte';
-	import { ArrowLeft, Plus } from '@lucide/svelte';
+	import {ArrowLeft, Plus} from '@lucide/svelte';
 
 	let { data, form } = $props();
 	let set = $derived(data.set);
@@ -14,6 +14,7 @@
 			keyword: q.keyword,
 			correctAnswer: q.correctAnswer,
 			alternativeAnswers: q.alternativeAnswers,
+			exampleWrongAnswers: q.exampleWrongAnswers,
 			minWords: q.minWords,
 			maxWords: q.maxWords
 		};
@@ -58,6 +59,7 @@
 				keyword: '',
 				correctAnswer: '',
 				alternativeAnswers: [],
+				exampleWrongAnswers: [],
 				minWords: 0,
 				maxWords: 0
 			}

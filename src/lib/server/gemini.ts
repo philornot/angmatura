@@ -1,6 +1,6 @@
-import { GoogleGenAI, Type } from '@google/genai';
-import { env } from '$env/dynamic/private';
-import type { AiGeneratedSet, Question, SetType } from '$lib/types';
+import {GoogleGenAI, Type} from '@google/genai';
+import {env} from '$env/dynamic/private';
+import type {AiGeneratedSet, Question, SetType} from '$lib/types';
 
 let client: GoogleGenAI | null = null;
 
@@ -65,6 +65,12 @@ const SET_RESPONSE_SCHEMA = {
 						items: { type: Type.STRING },
 						description: 'Other accepted phrasings, if the answer key lists any. Otherwise empty.'
 					},
+					exampleWrongAnswers: {
+						type: Type.ARRAY,
+						items: {type: Type.STRING},
+						description:
+							'Known INCORRECT answers explicitly listed on the worksheet/answer key (e.g. common mistakes the teacher marked as wrong, or distractor answers shown for comparison). Do NOT invent these — only include them if they are actually printed on the sheet. Otherwise empty.'
+					},
 					maxWords: {
 						type: Type.NUMBER,
 						description: 'Max number of words allowed in the gap, if specified on the sheet. Else 0.'
@@ -92,6 +98,8 @@ Identify the exercise type:
 
 For each question, transcribe the source text exactly as printed. Represent the gap in "sentence2WithGap" using six underscores: ______
 If the official answer key on the screenshots allows alternative phrasings, list them in alternativeAnswers. If part of the correct answer is optional, wrap that part in parentheses instead of duplicating the whole answer, e.g. "so noisy outside (that)".
+
+If the worksheet or answer key also shows known INCORRECT answers — for example common mistakes crossed out or annotated by a teacher, or distractor answers printed for comparison — transcribe them into exampleWrongAnswers. Only include an answer here if it is actually visible on the sheet as wrong; never guess or invent plausible mistakes yourself.
 
 Return only the structured data — no commentary.`;
 

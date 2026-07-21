@@ -81,6 +81,7 @@ export interface AiGeneratedQuestion {
 	keyword?: string;
 	correctAnswer: string;
 	alternativeAnswers?: string[];
+	exampleWrongAnswers?: string[];
 	maxWords?: number;
 	minWords?: number;
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { tick } from 'svelte';
-	import type { SetType } from '$lib/types';
-	import { ChevronDown, X } from '@lucide/svelte';
+	import {tick} from 'svelte';
+	import type {SetType} from '$lib/types';
+	import {ChevronDown, X} from '@lucide/svelte';
 
 	export interface EditableQuestion {
 		sentence1: string;
@@ -9,6 +9,7 @@
 		keyword: string;
 		correctAnswer: string;
 		alternativeAnswers: string[];
+		exampleWrongAnswers: string[];
 		minWords: number;
 		maxWords: number;
 	}
@@ -26,6 +27,7 @@
 	} = $props();
 
 	let newAlt = $state('');
+	let newWrong = $state('');
 	let expanded = $state(false);
 
 	function addAlternative() {
@@ -37,6 +39,17 @@
 
 	function removeAlternative(i: number) {
 		question.alternativeAnswers = question.alternativeAnswers.filter((_, idx) => idx !== i);
+	}
+
+	function addWrongAnswer() {
+		const value = newWrong.trim();
+		if (!value) return;
+		question.exampleWrongAnswers = [...question.exampleWrongAnswers, value];
+		newWrong = '';
+	}
+
+	function removeWrongAnswer(i: number) {
+		question.exampleWrongAnswers = question.exampleWrongAnswers.filter((_, idx) => idx !== i);
 	}
 
 	// Typing a single "_" auto-expands into the "______" gap marker used by
@@ -113,6 +126,34 @@
 						onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addAlternative())}
 					/>
 					<button type="button" class="btn btn-secondary" onclick={addAlternative}>Dodaj</button>
+				</div>
+			</div>
+
+			<div class="alt-block wrong-block">
+				<span class="field-label">Znane błędne odpowiedzi</span>
+				<div class="chips">
+					{#each question.exampleWrongAnswers as wrong, i (wrong + i)}
+						<span class="chip chip-wrong">
+							{wrong}
+							<button
+									type="button"
+									aria-label="Usuń błędną odpowiedź"
+									onclick={() => removeWrongAnswer(i)}
+							>
+								<X size={14} aria-hidden="true"/>
+							</button>
+						</span>
+					{/each}
+				</div>
+				<div class="alt-add">
+					<input
+							class="field"
+							type="text"
+							placeholder="Dodaj znaną błędną odpowiedź…"
+							bind:value={newWrong}
+							onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addWrongAnswer())}
+					/>
+					<button type="button" class="btn btn-secondary" onclick={addWrongAnswer}>Dodaj</button>
 				</div>
 			</div>
 
@@ -219,6 +260,11 @@
 		background: var(--paper);
 		border-radius: 999px;
 		padding: 4px 6px 4px 10px;
+	}
+
+	.chip-wrong {
+		background: var(--incorrect-soft);
+		color: var(--incorrect);
 	}
 
 	.chip button {

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { enhance } from '$app/forms';
+	import {goto} from '$app/navigation';
+	import {enhance} from '$app/forms';
+	import type {EditableQuestion} from '$lib/components/KwtQuestionEditor.svelte';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
-	import type { EditableQuestion } from '$lib/components/KwtQuestionEditor.svelte';
-	import type { AiGeneratedSet, SetType } from '$lib/types';
-	import { ArrowLeft, Plus } from '@lucide/svelte';
+	import type {AiGeneratedSet, SetType} from '$lib/types';
+	import {ArrowLeft, Plus} from '@lucide/svelte';
 
 	let { form } = $props();
 
@@ -31,6 +31,7 @@
 			keyword: q.keyword ?? '',
 			correctAnswer: q.correctAnswer,
 			alternativeAnswers: q.alternativeAnswers ?? [],
+			exampleWrongAnswers: q.exampleWrongAnswers ?? [],
 			minWords: q.minWords ?? 0,
 			maxWords: q.maxWords ?? 0
 		}));
@@ -46,6 +47,7 @@
 				keyword: '',
 				correctAnswer: '',
 				alternativeAnswers: [],
+				exampleWrongAnswers: [],
 				minWords: 0,
 				maxWords: 0
 			}
@@ -69,7 +71,10 @@
 	<div class="container page">
 		<a href="/create/ai" class="back"><ArrowLeft size={14} aria-hidden="true" /> Wgraj inne zdjęcia</a>
 		<h1>Sprawdź wygenerowany zestaw</h1>
-		<p class="sub">AI wypisało {questions.length} pytań. Popraw literówki i dopisz warianty, jeśli trzeba.</p>
+		<p class="sub">
+			AI wypisało {questions.length} pytań. Popraw literówki i dopisz warianty lub znane błędne odpowiedzi,
+			jeśli trzeba.
+		</p>
 
 		{#if form?.message}
 			<p class="error-banner">{form.message}</p>

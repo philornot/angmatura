@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import {enhance} from '$app/forms';
+	import type {EditableQuestion} from '$lib/components/KwtQuestionEditor.svelte';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
-	import type { EditableQuestion } from '$lib/components/KwtQuestionEditor.svelte';
-	import type { SetType } from '$lib/types';
-	import { ArrowLeft, Plus } from '@lucide/svelte';
+	import type {SetType} from '$lib/types';
+	import {ArrowLeft, Plus} from '@lucide/svelte';
 
 	let { form } = $props();
 
@@ -21,6 +21,7 @@
 			keyword: '',
 			correctAnswer: '',
 			alternativeAnswers: [],
+			exampleWrongAnswers: [],
 			minWords: 0,
 			maxWords: 0
 		};
