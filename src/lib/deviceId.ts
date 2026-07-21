@@ -46,3 +46,37 @@ export function getDeviceId(): string {
 		return generateId();
 	}
 }
+
+/**
+ * Mirrors the device id into a cookie so the server can read it during SSR
+ * `load()` (e.g. on `/edit/[slug]`, to tell "you own this set" apart from
+ * "an anonymous visitor" before the page even renders).
+ *
+ * Previously this same job was done by stuffing the id into the URL as
+ * `?d=...`. That worked, but it meant the id — effectively "the key that
+ * lets you edit this set in place" — sat right there in the address bar,
+ * ready to be copy-pasted into a chat or a bug report along with everything
+ * else in the URL and handed to someone else by accident. A cookie carries
+ * the exact same information to the server without ever showing up
+ * anywhere a person actually looks at or copies.
+ *
+ * Call this once per page load, from a browser-only context (a root
+ * `$effect`, same as `initTheme()`). Deliberately silent on failure, same
+ * reasoning as `getDeviceId()`: a cookie write that fails (e.g. cookies
+ * disabled) should just mean the server falls back to treating the visitor
+ * as anonymous, not crash the page.
+ */
+export function syncDeviceIdCookie(deviceId: string): void {
+	try {
+		if (typeof document === 'undefined') return;
+		// 400 days is the practical cap most browsers enforce on Set-Cookie
+		// max-age; SameSite=Lax is enough since this never needs to travel
+		// on a cross-site request. No Secure flag, so it still works when
+		// testing over plain HTTP on a phone over LAN.
+		const maxAgeSeconds = 400 * 24 * 60 * 60;
+		document.cookie = `${STORAGE_KEY}=${encodeURIComponent(deviceId)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`;
+	} catch {
+		// Cookies disabled or otherwise unwritable — server will just see no
+		// cookie and treat the visitor as anonymous, same as today.
+	}
+}

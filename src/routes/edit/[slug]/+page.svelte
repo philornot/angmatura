@@ -8,8 +8,8 @@
 	let { data, form } = $props();
 	let set = $derived(data.set);
 
-	// Used only to fill the fork form's hidden field, falling back to whatever
-	// `?d=` the page was already loaded with.
+	// Used only to fill the fork form's hidden field, falling back to
+	// whatever the server already resolved from the device-id cookie.
 	// svelte-ignore state_referenced_locally
 	let deviceId = $state(data.deviceId ?? '');
 	$effect(() => {

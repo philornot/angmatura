@@ -3,15 +3,17 @@ import type {Actions, PageServerLoad} from './$types';
 import {createSet, getSetBySlugOrCustom, isSetOwner, updateSetMeta} from '$lib/server/repo/sets';
 import {getQuestionsForSet, type NewQuestionInput, replaceQuestions} from '$lib/server/repo/questions';
 
-export const load: PageServerLoad = ({params, url}) => {
+export const load: PageServerLoad = ({params, cookies}) => {
 	const set = getSetBySlugOrCustom(params.slug);
 	if (!set) error(404, 'Nie znaleziono zestawu.');
 
-	// The "quiet account" system: the edit link carries the visitor's
-	// anonymous device id as `?d=`. If it matches the set's recorded
-	// creator, this browser made the set — it can edit the original in
-	// place instead of always forking.
-	const deviceId = url.searchParams.get('d');
+	// The "quiet account" system: the visitor's anonymous device id travels
+	// in a cookie (mirrored there client-side by `syncDeviceIdCookie`), not
+	// in the URL — so it never ends up sitting in an address bar that could
+	// get copy-pasted and handed to someone else by accident. If it matches
+	// the set's recorded creator, this browser made the set — it can edit
+	// the original in place instead of always forking.
+	const deviceId = cookies.get('angmatura_device') ?? null;
 	const isOwner = isSetOwner(set, deviceId);
 
 	if (set.isPublic && !isOwner) {
@@ -28,10 +30,7 @@ export const load: PageServerLoad = ({params, url}) => {
 		});
 		const originalQuestions = getQuestionsForSet(set.id);
 		replaceQuestions(forked.id, originalQuestions);
-		const forkedHref = deviceId
-			? `/edit/${forked.slug}?d=${encodeURIComponent(deviceId)}`
-			: `/edit/${forked.slug}`;
-		redirect(303, forkedHref);
+		redirect(303, `/edit/${forked.slug}`);
 	}
 
 	const questions = getQuestionsForSet(set.id);
@@ -115,9 +114,6 @@ export const actions: Actions = {
 		const originalQuestions = getQuestionsForSet(set.id);
 		replaceQuestions(forked.id, originalQuestions);
 
-		const forkedHref = deviceId
-			? `/edit/${forked.slug}?d=${encodeURIComponent(deviceId)}`
-			: `/edit/${forked.slug}`;
-		redirect(303, forkedHref);
+		redirect(303, `/edit/${forked.slug}`);
 	}
 };

@@ -7,7 +7,8 @@ import {initSchema} from '$lib/server/schema';
 // wouldn't catch this: the bug isn't in that function, it's that one of the
 // two code paths that mutate a set never calls it at all.
 //
-// Context: the edit link's `?d=` device id is how the server tells "this
+// Context: the visitor's anonymous device id — mirrored into a cookie
+// client-side by `syncDeviceIdCookie` — is how the server tells "this
 // browser owns this set" apart from "an anonymous visitor". `load()` uses it
 // correctly — a non-owner hitting a public set's edit page gets forked onto
 // a private copy instead of touching the original. But `actions.save` is a
@@ -17,9 +18,8 @@ import {initSchema} from '$lib/server/schema';
 // any publicly-listed set — can overwrite the original in place by posting
 // directly to the `save` action, completely bypassing the fork-on-view
 // protection. That's exactly the kind of "unauthorized access to someone
-// else's set" this suite exists to catch, and it's especially worth locking
-// down right after fixing the `?d=` race: a client-side timing race and a
-// server-side missing-check are different bugs, but both let a stranger's
+// else's set" this suite exists to catch: a missing check in `load()` and a
+// missing check in `save` are different bugs, but both let a stranger's
 // click end up mutating (or claiming) someone else's original.
 let testDb: Database.Database;
 
@@ -68,8 +68,8 @@ describe('edit/[slug] authorization (integration, real SQLite)', () => {
         try {
             await load({
                 params: {slug: 'public-set'},
-                url: new URL('http://localhost/edit/public-set?d=attacker-device')
-            } as Parameters<typeof load>[0]);
+                cookies: {get: () => 'attacker-device'}
+            } as unknown as Parameters<typeof load>[0]);
         } catch (e) {
             redirected = e;
         }

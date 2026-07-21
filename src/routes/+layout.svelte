@@ -3,6 +3,7 @@
 	import {initTheme} from '$lib/theme.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import {page} from '$app/state';
+	import {getDeviceId, syncDeviceIdCookie} from '$lib/deviceId';
 
 	let { children } = $props();
 
@@ -11,6 +12,7 @@
 	// explicit browser guard.
 	$effect(() => {
 		initTheme();
+		syncDeviceIdCookie(getDeviceId());
 	});
 </script>
 

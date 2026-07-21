@@ -2,7 +2,6 @@
 	import {page} from '$app/state';
 	import {goto} from '$app/navigation';
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
-	import {getDeviceId} from '$lib/deviceId';
 
 	let { data } = $props();
 	let set = $derived(data.set);
@@ -11,13 +10,13 @@
 	let showShareBanner = $derived(page.url.searchParams.get('created') === '1' && !set.isPublic);
 	let copied = $state(false);
 
-	// The edit link carries the anonymous device id as a query param so the
-	// server can recognize "this browser created this set" and open the
-	// original for editing instead of forking a copy — the "quiet account"
-	// system.
+	// The device id no longer needs to travel in the URL — the root layout
+	// mirrors it into a cookie on every page load (`syncDeviceIdCookie`), and
+	// the server reads it from there to recognize "this browser created this
+	// set" and open the original for editing instead of forking a copy (the
+	// "quiet account" system). This is just a plain navigation now.
 	function goToEdit() {
-		const deviceId = getDeviceId();
-		goto(deviceId ? `/edit/${set.slug}?d=${encodeURIComponent(deviceId)}` : `/edit/${set.slug}`);
+		goto(`/edit/${set.slug}`);
 	}
 
 	async function copyLink() {
