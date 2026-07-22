@@ -1,6 +1,7 @@
 <script lang="ts">
     import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
     import FloatingCreateButton from '$lib/components/FloatingCreateButton.svelte';
+    import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
     import type {SetSummary, SetType} from '$lib/types';
     import {getDeviceId} from '$lib/deviceId';
     import {zestawForm} from '$lib/polishPlural';
@@ -16,9 +17,17 @@
 
     let loading = $state(true);
     let sets = $state<SetSummary[]>([]);
-    // Tracks which set is mid-delete so its button can show a busy state and
-    // can't be double-submitted while the request is in flight.
-    let deletingId = $state<number | null>(null);
+    // Tracks which sets are mid-delete (single id, or every selected id
+    // during a bulk delete) so their buttons/checkboxes show a busy state
+    // and can't be double-submitted while the request is in flight.
+    let deletingIds = $state<Set<number>>(new Set());
+    // Which sets the user has ticked via checkbox, for bulk delete.
+    let selectedIds = $state<Set<number>>(new Set());
+
+    // Drives the ConfirmDialog. `pendingIds` is either one set (single
+    // delete) or several (bulk delete) — the dialog doesn't care which,
+    // it just confirms "trash these N sets".
+    let pendingIds = $state<number[] | null>(null);
 
     function groupByType(list: SetSummary[]): Record<SetType, SetSummary[]> {
         const groups: Record<SetType, SetSummary[]> = {kwt: [], grammar: [], translation: []};
@@ -27,6 +36,7 @@
     }
 
     let groups = $derived(groupByType(sets));
+    let selectedCount = $derived(selectedIds.size);
 
     function loadSets() {
         const deviceId = getDeviceId();
@@ -52,31 +62,102 @@
         loadSets();
     });
 
-    // Moves a set to the trash rather than deleting it outright — it can
-    // still be recovered by an admin within 30 days (see /admin/trash). We
-    // optimistically drop it from the visible list on success rather than
-    // re-fetching the whole page.
-    async function trashSet(set: SetSummary) {
-        if (!confirm(`Przenieść „${set.title}” do kosza? Będzie można to cofnąć przez 30 dni.`)) return;
+    function toggleSelected(id: number) {
+        const next = new Set(selectedIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        selectedIds = next;
+    }
 
-        deletingId = set.id;
-        try {
-            const res = await fetch(`/api/sets/${set.id}/trash`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({deviceId: getDeviceId()})
-            });
-            if (res.ok) {
-                sets = sets.filter((s) => s.id !== set.id);
-            } else {
-                alert('Nie udało się usunąć zestawu. Spróbuj ponownie.');
-            }
-        } catch {
-            alert('Nie udało się usunąć zestawu. Spróbuj ponownie.');
-        } finally {
-            deletingId = null;
+    /**
+     * Actually moves the given sets to the trash. Shared by both the
+     * single-set delete button and the bulk-delete bar — the only
+     * difference between those two callers is how many ids they pass in.
+     *
+     * Args:
+     *   ids: Set ids to move to the trash.
+     */
+    async function performTrash(ids: number[]) {
+        deletingIds = new Set([...deletingIds, ...ids]);
+        const deviceId = getDeviceId();
+
+        const results = await Promise.allSettled(
+            ids.map((id) =>
+                fetch(`/api/sets/${id}/trash`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({deviceId})
+                }).then((res) => ({id, ok: res.ok}))
+            )
+        );
+
+        const succeededIds = new Set(
+            results
+                .filter((r): r is PromiseFulfilledResult<{
+                    id: number;
+                    ok: boolean
+                }> => r.status === 'fulfilled' && r.value.ok)
+                .map((r) => r.value.id)
+        );
+        const failedCount = ids.length - succeededIds.size;
+
+        sets = sets.filter((s) => !succeededIds.has(s.id));
+        selectedIds = new Set([...selectedIds].filter((id) => !succeededIds.has(id)));
+        deletingIds = new Set([...deletingIds].filter((id) => !ids.includes(id)));
+
+        if (failedCount > 0) {
+            alert(
+                failedCount === 1
+                    ? 'Nie udało się usunąć zestawu. Spróbuj ponownie.'
+                    : `Nie udało się usunąć ${failedCount} zestawów. Spróbuj ponownie.`
+            );
         }
     }
+
+    /**
+     * Handles a click on a single set's delete button. Normally opens the
+     * confirm dialog; holding Shift while clicking skips the confirmation
+     * and trashes immediately, for anyone who wants to plow through several
+     * sets quickly and doesn't need the safety net each time.
+     *
+     * Args:
+     *   set: The set to trash.
+     *   event: The click event, checked for the Shift modifier.
+     */
+    function requestTrashOne(set: SetSummary, event: MouseEvent) {
+        if (event.shiftKey) {
+            void performTrash([set.id]);
+            return;
+        }
+        pendingIds = [set.id];
+    }
+
+    /** Opens the confirm dialog for every currently-selected set. Bulk
+     *  delete always confirms — Shift-skip is only offered for the
+     *  single-set button, since accidentally shift-clicking "delete
+     *  selected" would be a much costlier mistake. */
+    function requestTrashSelected() {
+        if (selectedIds.size === 0) return;
+        pendingIds = [...selectedIds];
+    }
+
+    function confirmPending() {
+        if (pendingIds) void performTrash(pendingIds);
+        pendingIds = null;
+    }
+
+    function cancelPending() {
+        pendingIds = null;
+    }
+
+    let dialogMessage = $derived.by(() => {
+        if (!pendingIds) return '';
+        if (pendingIds.length === 1) {
+            const set = sets.find((s) => s.id === pendingIds![0]);
+            return `Czy na pewno chcesz usunąć „${set?.title ?? 'ten zestaw'}”?`;
+        }
+        return `Czy na pewno chcesz usunąć ${pendingIds.length} ${zestawForm(pendingIds.length)}?`;
+    });
 </script>
 
 <svelte:head>
@@ -108,7 +189,15 @@
             <a href="/create" class="btn btn-primary btn-block">Stwórz pierwszy zestaw</a>
         </div>
     {:else}
-        <p class="count mono">{sets.length} {zestawForm(sets.length)}</p>
+        <div class="list-header">
+            <p class="count mono">{sets.length} {zestawForm(sets.length)}</p>
+            {#if selectedCount > 0}
+                <button type="button" class="btn btn-ghost bulk-delete-btn" onclick={requestTrashSelected}>
+                    <Trash2 size={14} aria-hidden="true"/>
+                    Usuń zaznaczone ({selectedCount})
+                </button>
+            {/if}
+        </div>
 
         {#each ORDER as type (type)}
             {#if groups[type].length > 0}
@@ -120,6 +209,14 @@
                     <ul class="set-list">
                         {#each groups[type] as set (set.id)}
                             <li class="set-row">
+                                <input
+                                        type="checkbox"
+                                        class="set-checkbox"
+                                        aria-label="Zaznacz „{set.title}”"
+                                        checked={selectedIds.has(set.id)}
+                                        disabled={deletingIds.has(set.id)}
+                                        onchange={() => toggleSelected(set.id)}
+                                />
                                 <a href="/set/{set.slug}" class="set-card card">
                                     {#if !set.isPublic}
                                         <Lock size={14} aria-hidden="true" class="lock-icon"/>
@@ -133,9 +230,9 @@
                                 <button
                                         type="button"
                                         class="btn btn-ghost delete-btn"
-                                        title="Przenieś do kosza"
-                                        disabled={deletingId === set.id}
-                                        onclick={() => trashSet(set)}
+                                        title="Przenieś do kosza (Shift+klik pomija potwierdzenie)"
+                                        disabled={deletingIds.has(set.id)}
+                                        onclick={(e) => requestTrashOne(set, e)}
                                 >
                                     <Trash2 size={16} aria-hidden="true"/>
                                 </button>
@@ -151,6 +248,15 @@
         <FloatingCreateButton href="/create"/>
     </footer>
 </div>
+
+<ConfirmDialog
+        confirmLabel="Usuń"
+        message={dialogMessage}
+        onCancel={cancelPending}
+        onConfirm={confirmPending}
+        open={pendingIds !== null}
+        title="Przenieść do kosza?"
+/>
 
 <style>
     .page {
@@ -191,6 +297,37 @@
     .count {
         font-size: 12px;
         color: var(--muted);
+    }
+
+    .list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 32px;
+    }
+
+    .bulk-delete-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--incorrect);
+        font-size: 13px;
+    }
+
+    .set-checkbox {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        align-self: center;
+        accent-color: var(--accent);
+        cursor: pointer;
+    }
+
+    .set-checkbox:disabled {
+        opacity: 0.5;
+        cursor: default;
     }
 
     .section {
