@@ -185,7 +185,7 @@
     {:else if sets.length === 0}
         <div class="empty-state card">
             <h2>Nie masz jeszcze żadnego zestawu</h2>
-            <p>Stworzone przez Ciebie zestawy — publiczne i prywatne — pojawią się tutaj.</p>
+            <p>Stworzone przez Ciebie zestawy (zarówno publiczne jak i prywatne) pojawią się tutaj.</p>
             <a href="/create" class="btn btn-primary btn-block">Stwórz pierwszy zestaw</a>
         </div>
     {:else}
