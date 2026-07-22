@@ -14,6 +14,11 @@ export interface SetSummary {
 	/** Anonymous device id (see `$lib/deviceId`) of whoever created this set,
 	 *  or null if unknown/created before the "quiet account" system existed. */
 	creatorDeviceId: string | null;
+	/** When this set was moved to the trash (soft-deleted), or null if it's
+	 *  live. A trashed set is hidden everywhere except /admin/trash, and is
+	 *  only hard-deleted once TRASH_RETENTION_DAYS has passed (see
+	 *  `$lib/server/repo/sets`). */
+	deletedAt: string | null;
 	createdAt: string;
 	questionCount: number;
 }

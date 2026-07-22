@@ -14,17 +14,17 @@ import {softDeleteSet} from '$lib/server/repo/sets';
  * `/edit/[slug]` `actions.save`).
  */
 export const POST: RequestHandler = async ({params, request}) => {
-    const id = Number(params.id);
-    if (!Number.isInteger(id)) error(400, 'Invalid set id');
+	const id = Number(params.id);
+	if (!Number.isInteger(id)) error(400, 'Invalid set id');
 
-    const body = await request.json().catch(() => null);
-    const deviceId = typeof body?.deviceId === 'string' ? body.deviceId : null;
+	const body = await request.json().catch(() => null);
+	const deviceId = typeof body?.deviceId === 'string' ? body.deviceId : null;
 
-    const result = softDeleteSet(id, deviceId);
-    if (!result.ok) {
-        if (result.error === 'not_found') error(404, 'Set not found');
-        error(403, 'You are not the owner of this set.');
-    }
+	const result = softDeleteSet(id, deviceId);
+	if (!result.ok) {
+		if (result.error === 'not_found') error(404, 'Set not found');
+		error(403, 'You are not the owner of this set.');
+	}
 
-    return json({trashed: true});
+	return json({trashed: true});
 };
