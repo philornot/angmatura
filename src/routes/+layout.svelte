@@ -48,15 +48,18 @@
 
 <div class="shell">
 	<header class="masthead">
-		<a class="wordmark" href="/" onclick={handleLogoClick}>
-			<span class="wordmark-main">angmatura</span>
-		</a>
-		<nav class="nav">
-			<a aria-current={page.url.pathname === '/my-sets' ? 'page' : undefined} class="nav-link" href="/my-sets">
-				Moje zestawy
+		<div class="masthead-inner container">
+			<a class="wordmark" href="/" onclick={handleLogoClick}>
+				<span class="wordmark-main">angmatura</span>
 			</a>
-		</nav>
-		<ThemeToggle/>
+			<nav class="nav">
+				<a aria-current={page.url.pathname === '/my-sets' ? 'page' : undefined} class="nav-link"
+				   href="/my-sets">
+					Moje zestawy
+				</a>
+			</nav>
+			<ThemeToggle/>
+		</div>
 	</header>
 
 	<main>
@@ -74,7 +77,10 @@
 	}
 
 	.masthead {
-		padding: 14px 20px;
+		padding: 14px 0;
+	}
+
+	.masthead-inner {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
