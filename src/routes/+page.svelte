@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
 	import FloatingCreateButton from '$lib/components/FloatingCreateButton.svelte';
+	import SectionQuickNav from '$lib/components/SectionQuickNav.svelte';
 	import type {SetType} from '$lib/types';
 	import {ArrowRight, Star} from '@lucide/svelte';
 	import {getDeviceId} from '$lib/deviceId';
@@ -15,6 +16,14 @@
 	};
 
 	const ORDER: SetType[] = ['kwt', 'grammar', 'translation'];
+
+	// Feeds the desktop quick-nav — only the section types that actually have
+	// sets right now, in page order. The nav itself only renders once there
+	// are 2+ of these (see SectionQuickNav / the template below): with a
+	// single section there's nothing to jump *between*.
+	let visibleSections = $derived(
+			ORDER.filter((t) => data.groups[t].length > 0).map((t) => ({type: t, label: SECTION_TITLES[t]}))
+	);
 
 	// deviceId lives only in localStorage, so we can't know the due count
 	// during SSR — fetch it client-side and keep the banner hidden until we
@@ -40,6 +49,10 @@
 </svelte:head>
 
 <div class="container">
+	{#if visibleSections.length > 1}
+		<SectionQuickNav sections={visibleSections}/>
+	{/if}
+
 	{#if dueCount > 0}
 		<a href="/review" class="hero card">
 			<div class="hero-text">
@@ -78,7 +91,7 @@
 
 	{#each ORDER as type (type)}
 		{#if data.groups[type].length > 0}
-			<section class="section">
+			<section class="section" id="section-{type}" data-section-type={type}>
 				<div class="section-head">
 					<h2>{SECTION_TITLES[type]}</h2>
 					<SetTypeBadge {type} />
@@ -179,6 +192,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+		scroll-margin-top: 20px;
 	}
 
 	.section-head {
