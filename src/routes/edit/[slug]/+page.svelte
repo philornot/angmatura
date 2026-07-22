@@ -1,9 +1,11 @@
 <script lang="ts">
 	import {enhance} from '$app/forms';
+	import {goto} from '$app/navigation';
 	import type {EditableQuestion} from '$lib/components/KwtQuestionEditor.svelte';
 	import KwtQuestionEditor from '$lib/components/KwtQuestionEditor.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import {getDeviceId} from '$lib/deviceId';
-	import {ArrowLeft, Plus} from '@lucide/svelte';
+	import {ArrowLeft, Plus, Trash2} from '@lucide/svelte';
 
 	let { data, form } = $props();
 	let set = $derived(data.set);
@@ -44,6 +46,42 @@
 	let questions = $state<EditableQuestion[]>(data.questions.map(toEditable));
 	let submitting = $state(false);
 	let savedFlash = $state(false);
+
+	// Deleting a set (moves it to the trash — same endpoint as the "my sets"
+	// list). Deliberately no Shift-to-skip shortcut here, unlike the list
+	// view: this page shows one set at a time and deleting the *wrong* one by
+	// habit-clicking through a shortcut would be a much costlier mistake than
+	// on a list where you can see exactly what you selected.
+	let showDeleteConfirm = $state(false);
+	let deleting = $state(false);
+	let deleteError = $state<string | null>(null);
+
+	function requestDelete() {
+		deleteError = null;
+		showDeleteConfirm = true;
+	}
+
+	function cancelDelete() {
+		showDeleteConfirm = false;
+	}
+
+	async function confirmDelete() {
+		deleting = true;
+		try {
+			const res = await fetch(`/api/sets/${data.set.id}/trash`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({deviceId})
+			});
+			if (!res.ok) throw new Error('request failed');
+			showDeleteConfirm = false;
+			await goto('/my-sets');
+		} catch {
+			deleteError = 'Nie udało się usunąć zestawu. Spróbuj ponownie.';
+			deleting = false;
+			showDeleteConfirm = false;
+		}
+	}
 
 	// If SvelteKit reuses this component while navigating between different
 	// sets' edit pages, reload the editable copies from the newly loaded set.
@@ -87,7 +125,15 @@
 
 <div class="container page">
 	<a href="/set/{set.slug}" class="back"><ArrowLeft size={14} aria-hidden="true" /> {set.title}</a>
-	<h1>Edytuj zestaw</h1>
+	<div class="title-row">
+		<h1>Edytuj zestaw</h1>
+		{#if data.isOwner}
+			<button type="button" class="btn btn-ghost delete-set-btn" disabled={deleting} onclick={requestDelete}>
+				<Trash2 size={16} aria-hidden="true"/>
+				<span class="delete-set-label">Usuń zestaw</span>
+			</button>
+		{/if}
+	</div>
 	{#if data.isOwner}
 		<div class="owner-note">
 			{#if data.isFork}
@@ -133,7 +179,14 @@
 			submitting = true;
 			savedFlash = false;
 			return async ({ update }) => {
-				await update();
+				// `update()` defaults to also calling the form's native
+				// `reset()`. Our text inputs are bound via `bind:value` to
+				// Svelte state (not an HTML `value` attribute), so their
+				// `defaultValue` is empty — a native reset blanks them out
+				// visually even though the underlying state (and the saved
+				// data) is still correct. `reset: false` keeps the fields
+				// showing what the user actually has.
+				await update({ reset: false });
 				submitting = false;
 				savedFlash = true;
 			};
@@ -169,7 +222,20 @@
 			{submitting ? 'Zapisuję…' : 'Zapisz zmiany'}
 		</button>
 	</form>
+
+	{#if deleteError}
+		<p class="error-banner">{deleteError}</p>
+	{/if}
 </div>
+
+<ConfirmDialog
+		confirmLabel={deleting ? 'Usuwam…' : 'Usuń'}
+		message="Czy na pewno chcesz usunąć „{set.title}”?"
+		onCancel={cancelDelete}
+		onConfirm={confirmDelete}
+		open={showDeleteConfirm}
+		title="Usunąć ten zestaw?"
+/>
 
 <style>
 	.page {
@@ -186,6 +252,13 @@
 		font-size: 13px;
 		color: var(--muted);
 		text-decoration: none;
+	}
+
+	.title-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 	}
 
 	h1 {
@@ -281,5 +354,30 @@
 		padding: 10px 14px;
 		border-radius: var(--radius-sm);
 		font-size: 14px;
+	}
+
+	.delete-set-btn {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		color: var(--incorrect);
+		white-space: nowrap;
+	}
+
+	.delete-set-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	@media (max-width: 480px) {
+		.delete-set-label {
+			display: none;
+		}
+
+		.delete-set-btn {
+			padding: 6px;
+		}
 	}
 </style>
