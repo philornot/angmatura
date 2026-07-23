@@ -2,6 +2,7 @@
 	import {enhance} from '$app/forms';
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 	import {Star, Trash2} from '@lucide/svelte';
 	import {zestawForm} from '$lib/polishPlural';
 	import type {SetSummary} from '$lib/types';
@@ -190,7 +191,7 @@
 								disabled={bulkBusy}
 								onclick={() => runBulkAction('unfeature', [...selectedIds])}
 						>
-							Odznacz
+							Odznacz wyróżnienie
 						</button>
 						<button type="button" class="btn btn-ghost danger" disabled={bulkBusy}
 						        onclick={requestTrashSelected}>
@@ -206,13 +207,15 @@
 			{#each sets as set (set.id)}
 				<li class="set-row card">
 					<div class="set-info">
-						<input
-								type="checkbox"
-								class="set-checkbox"
-								aria-label="Zaznacz „{set.title}”"
-								checked={selectedIds.has(set.id)}
-								onchange={() => toggleSelected(set.id)}
-						/>
+						<label class="checkbox-hit">
+							<input
+									type="checkbox"
+									class="set-checkbox"
+									aria-label="Zaznacz „{set.title}”"
+									checked={selectedIds.has(set.id)}
+									onchange={() => toggleSelected(set.id)}
+							/>
+						</label>
 						<SetTypeBadge type={set.type} />
 						<span class="title">{set.title}</span>
 						{#if set.isFeatured}
@@ -256,7 +259,7 @@
 								disabled={!set.isPublic}
 								title={set.isPublic ? '' : 'Najpierw opublikuj zestaw'}
 							>
-								{set.isFeatured ? 'Odznacz' : 'Wyróżnij'}
+								{set.isFeatured ? 'Odznacz wyróżnienie' : 'Wyróżnij'}
 							</button>
 						</form>
 						<button
@@ -267,6 +270,7 @@
 						>
 							Usuń
 						</button>
+						<Tooltip text="Przytrzymaj Shift podczas klikania „Usuń”, aby pominąć okno potwierdzenia"/>
 					</div>
 				</li>
 			{/each}
@@ -355,6 +359,26 @@
 		color: var(--ink-soft);
 		cursor: pointer;
 		white-space: nowrap;
+		/* The whole label (checkbox + text) is already clickable; this just
+		   pads out the tap target to the app's --tap-min without shifting
+		   the surrounding layout (negative margin cancels the padding). */
+		padding: 10px;
+		margin: -10px;
+		border-radius: var(--radius-sm);
+	}
+
+	/* Enlarges the per-row checkbox's clickable area well past its visible
+	   18px box (closer to --tap-min) by wrapping it in a padded label —
+	   clicking anywhere in the padding still toggles the input natively.
+	   Negative margin cancels the extra padding so the row layout doesn't
+	   shift. */
+	.checkbox-hit {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 13px;
+		margin: -13px;
+		cursor: pointer;
 	}
 
 	.bulk-actions {

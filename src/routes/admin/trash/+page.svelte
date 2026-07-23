@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 	import {ArrowLeft, RotateCcw, Trash2} from '@lucide/svelte';
 	import {zestawForm} from '$lib/polishPlural';
 	import type {SetSummary} from '$lib/types';
@@ -181,13 +182,15 @@
 				{#each sets as set (set.id)}
 					<li class="set-row card">
 						<div class="set-info">
-							<input
-									type="checkbox"
-									class="set-checkbox"
-									aria-label="Zaznacz „{set.title}”"
-									checked={selectedIds.has(set.id)}
-									onchange={() => toggleSelected(set.id)}
-							/>
+							<label class="checkbox-hit">
+								<input
+										type="checkbox"
+										class="set-checkbox"
+										aria-label="Zaznacz „{set.title}”"
+										checked={selectedIds.has(set.id)}
+										onchange={() => toggleSelected(set.id)}
+								/>
+							</label>
 							<SetTypeBadge type={set.type}/>
 							<span class="title">{set.title}</span>
 							<span class="count mono">{set.questionCount} pytań</span>
@@ -211,6 +214,8 @@
 								<Trash2 size={14} aria-hidden="true"/>
 								Usuń na stałe
 							</button>
+							<Tooltip
+									text="Przytrzymaj Shift podczas klikania „Usuń na stałe”, aby pominąć okno potwierdzenia"/>
 						</div>
 					</li>
 				{/each}
@@ -287,6 +292,24 @@
 		color: var(--ink-soft);
 		cursor: pointer;
 		white-space: nowrap;
+		/* Pads out the tap target closer to the app's --tap-min without
+		   shifting the surrounding layout (negative margin cancels it). */
+		padding: 10px;
+		margin: -10px;
+		border-radius: var(--radius-sm);
+	}
+
+	/* Enlarges the per-row checkbox's clickable area well past its visible
+	   18px box by wrapping it in a padded label — clicking anywhere in the
+	   padding still toggles the input natively. Negative margin cancels the
+	   extra padding so the row layout doesn't shift. */
+	.checkbox-hit {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 13px;
+		margin: -13px;
+		cursor: pointer;
 	}
 
 	.bulk-actions {

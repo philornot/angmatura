@@ -1,6 +1,7 @@
 <script lang="ts">
     import FloatingCreateButton from '$lib/components/FloatingCreateButton.svelte';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+    import Tooltip from '$lib/components/Tooltip.svelte';
     import type {SetSummary, SetType} from '$lib/types';
     import {getDeviceId} from '$lib/deviceId';
     import {zestawForm} from '$lib/polishPlural';
@@ -207,14 +208,16 @@
                     <ul class="set-list">
                         {#each groups[type] as set (set.id)}
                             <li class="set-row">
-                                <input
-                                        type="checkbox"
-                                        class="set-checkbox"
-                                        aria-label="Zaznacz „{set.title}”"
-                                        checked={selectedIds.has(set.id)}
-                                        disabled={deletingIds.has(set.id)}
-                                        onchange={() => toggleSelected(set.id)}
-                                />
+                                <label class="checkbox-hit">
+                                    <input
+                                            type="checkbox"
+                                            class="set-checkbox"
+                                            aria-label="Zaznacz „{set.title}”"
+                                            checked={selectedIds.has(set.id)}
+                                            disabled={deletingIds.has(set.id)}
+                                            onchange={() => toggleSelected(set.id)}
+                                    />
+                                </label>
                                 <a href="/set/{set.slug}" class="set-card card">
                                     {#if !set.isPublic}
                                         <Lock size={14} aria-hidden="true" class="lock-icon"/>
@@ -234,6 +237,10 @@
                                 >
                                     <Trash2 size={16} aria-hidden="true"/>
                                 </button>
+                                {#if !deletingIds.has(set.id)}
+                                    <Tooltip
+                                            text="Przytrzymaj Shift podczas klikania ikony kosza, aby pominąć okno potwierdzenia"/>
+                                {/if}
                             </li>
                         {/each}
                     </ul>
@@ -318,8 +325,24 @@
         width: 18px;
         height: 18px;
         margin: 0;
-        align-self: center;
         accent-color: var(--accent);
+        cursor: pointer;
+    }
+
+    /* Enlarges the checkbox's clickable area well past its visible 18px box
+       (closer to --tap-min) by wrapping it in a padded label — clicking
+       anywhere in the padding still toggles the input natively. Negative
+       margin cancels the extra padding so the row layout doesn't shift,
+       and align-self: center keeps it from stretching under .set-row's
+       align-items: stretch. */
+    .checkbox-hit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        align-self: center;
+        flex-shrink: 0;
+        padding: 13px;
+        margin: -13px;
         cursor: pointer;
     }
 
