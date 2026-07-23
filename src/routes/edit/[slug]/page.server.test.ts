@@ -111,8 +111,9 @@ describe('edit/[slug] authorization (integration, real SQLite)', () => {
 
         const result = await actions.save({
             params: {slug: 'public-set'},
-            request: {formData: async () => maliciousForm} as unknown as Request
-        } as Parameters<typeof actions.save>[0]);
+            request: {formData: async () => maliciousForm} as unknown as Request,
+            cookies: {get: () => undefined}
+        } as unknown as Parameters<typeof actions.save>[0]);
 
         // fail() returns an ActionFailure with a `status` property rather
         // than throwing — assert the request was explicitly rejected.
@@ -182,11 +183,120 @@ describe('edit/[slug] authorization (integration, real SQLite)', () => {
 
         await actions.save({
             params: {slug: 'public-set'},
-            request: {formData: async () => ownerForm} as unknown as Request
-        } as Parameters<typeof actions.save>[0]);
+            request: {formData: async () => ownerForm} as unknown as Request,
+            cookies: {get: () => undefined}
+        } as unknown as Parameters<typeof actions.save>[0]);
 
         const {getSetBySlugOrCustom} = await import('$lib/server/repo/sets');
         const afterSave = getSetBySlugOrCustom('public-set');
         expect(afterSave?.title).toBe('Updated by owner');
+    });
+
+    it('load() does NOT fork a public set for a logged-in admin, even though their device id does not match the owner', async () => {
+        const {load} = await import('./+page.server');
+        const {createAdminSession, ADMIN_COOKIE_NAME} = await import('$lib/server/adminAuth');
+        const adminToken = createAdminSession();
+
+        const result = await load({
+            params: {slug: 'public-set'},
+            cookies: {
+                get: (name: string) => (name === ADMIN_COOKIE_NAME ? adminToken : 'not-the-owner-device')
+            }
+        } as unknown as Parameters<typeof load>[0]);
+
+        // No redirect thrown: the admin lands directly on the original,
+        // exactly what the fork-prevention test above asserts does NOT
+        // happen for a plain visitor with the same mismatched device id.
+        expect(result!.set.title).toBe('Original title');
+        expect(result!.isAdmin).toBe(true);
+        expect(result!.isOwner).toBe(false);
+
+        const {getSetBySlugOrCustom} = await import('$lib/server/repo/sets');
+        // Still exactly one set in the database — nothing got forked.
+        expect(getSetBySlugOrCustom('public-set')?.id).toBe(1);
+    });
+
+    it('actions.save lets a logged-in admin edit a public set they do not own, in place', async () => {
+        const {actions} = await import('./+page.server');
+        const {createAdminSession, ADMIN_COOKIE_NAME} = await import('$lib/server/adminAuth');
+        const adminToken = createAdminSession();
+
+        const adminForm = makeFormData({
+            title: 'Corrected by admin',
+            isPublic: 'on',
+            questions: JSON.stringify([
+                {
+                    sentence1: 'He is happy.',
+                    sentence2WithGap: 'He ______ happy.',
+                    keyword: 'be',
+                    correctAnswer: 'is',
+                    alternativeAnswers: [],
+                    exampleWrongAnswers: [],
+                    grammarTags: [],
+                    minWords: 1,
+                    maxWords: 1
+                }
+            ]),
+            // The admin's browser has no matching "quiet account" device id
+            // for this set — the admin session cookie is what authorizes
+            // this save, not the deviceId field.
+            deviceId: 'not-the-owner-device'
+        });
+
+        const result = await actions.save({
+            params: {slug: 'public-set'},
+            request: {formData: async () => adminForm} as unknown as Request,
+            cookies: {
+                get: (name: string) => (name === ADMIN_COOKIE_NAME ? adminToken : undefined)
+            }
+        } as unknown as Parameters<typeof actions.save>[0]);
+
+        expect((result as { status?: number } | undefined)?.status).toBeUndefined();
+
+        const {getSetBySlugOrCustom} = await import('$lib/server/repo/sets');
+        const afterSave = getSetBySlugOrCustom('public-set');
+        // Edited in place: same id, new title. Ownership is untouched — the
+        // admin doesn't become the set's creator just by editing it.
+        expect(afterSave?.id).toBe(1);
+        expect(afterSave?.title).toBe('Corrected by admin');
+        expect(afterSave?.creatorDeviceId).toBe('owner-device');
+    });
+
+    it('actions.save still rejects a non-admin, non-owner request even when it claims an admin-shaped cookie value', async () => {
+        const {actions} = await import('./+page.server');
+
+        const maliciousForm = makeFormData({
+            title: 'HACKED',
+            isPublic: 'on',
+            questions: JSON.stringify([
+                {
+                    sentence1: 'x',
+                    sentence2WithGap: 'y ______ z',
+                    keyword: 'k',
+                    correctAnswer: 'defaced',
+                    alternativeAnswers: [],
+                    exampleWrongAnswers: [],
+                    grammarTags: [],
+                    minWords: 1,
+                    maxWords: 1
+                }
+            ]),
+            deviceId: 'attacker-device'
+        });
+
+        const result = await actions.save({
+            params: {slug: 'public-set'},
+            request: {formData: async () => maliciousForm} as unknown as Request,
+            // A forged-looking cookie value that was never issued by
+            // createAdminSession() must not validate — sessions are checked
+            // against the admin_sessions table, not pattern-matched.
+            cookies: {get: () => 'forged-token-that-was-never-issued'}
+        } as unknown as Parameters<typeof actions.save>[0]);
+
+        expect((result as { status?: number } | undefined)?.status).toBe(403);
+
+        const {getSetBySlugOrCustom} = await import('$lib/server/repo/sets');
+        const afterAttempt = getSetBySlugOrCustom('public-set');
+        expect(afterAttempt?.title).toBe('Original title');
     });
 });
