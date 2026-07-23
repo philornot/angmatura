@@ -41,12 +41,3 @@ export function zestawForm(n: number): string {
     if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return 'zestawy';
     return 'zestawów';
 }
-
-/**
- * Object pronoun agreement for referring back to "zestaw(y)" earlier in a
- * sentence, e.g. "będzie można go przywrócić" (1 zestaw) vs "będzie można
- * je przywrócić" (2+ zestawów).
- */
-export function goJeForm(n: number): string {
-    return n === 1 ? 'go' : 'je';
-}
