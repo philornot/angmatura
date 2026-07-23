@@ -26,41 +26,41 @@
     const COPY: Record<number, ErrorCopy> = {
         404: {
             mark: 'question',
-            margin: 'brak w zeszycie',
-            title: 'Nie znaleziono tej strony',
-            body: 'Tej kartki nie ma w zeszycie — sprawdź, czy adres jest poprawny, albo wróć do zestawów.',
+            margin: '',
+            title: 'Nie znaleziono strony',
+            body: 'Strona, której szukasz, nie istnieje lub została przeniesiona. Sprawdź adres albo wróć do zestawów.',
             primary: {label: 'Strona główna', href: '/', icon: 'home'},
             secondary: {label: 'Moje zestawy', action: 'back', icon: 'back'}
         },
         401: {
             mark: 'lock',
-            margin: 'wymagany podpis',
-            title: 'Musisz się zalogować',
-            body: 'Ta strona wymaga zalogowania. Wróć do panelu i podaj hasło jeszcze raz.',
+            margin: '',
+            title: 'Wymagane logowanie',
+            body: 'Ta strona wymaga zalogowania. Wróć do panelu i zaloguj się ponownie.',
             primary: {label: 'Strona główna', href: '/', icon: 'home'},
             secondary: {label: 'Spróbuj ponownie', action: 'back', icon: 'back'}
         },
         403: {
             mark: 'lock',
-            margin: 'niedozwolone',
+            margin: '',
             title: 'Brak dostępu',
-            body: 'Nie masz uprawnień, żeby zobaczyć tę stronę. Jeśli to pomyłka, wróć na start i spróbuj inaczej.',
+            body: 'Nie masz uprawnień do wyświetlenia tej strony.',
             primary: {label: 'Strona główna', href: '/', icon: 'home'},
             secondary: {label: 'Wróć', action: 'back', icon: 'back'}
         },
         429: {
             mark: 'clock',
-            margin: 'za szybko!',
-            title: 'Zbyt wiele prób',
-            body: 'Trochę za szybko przewracasz kartki. Odczekaj chwilę i spróbuj ponownie.',
+            margin: '',
+            title: 'Zbyt wiele żądań',
+            body: 'Wysłano zbyt wiele żądań w krótkim czasie. Odczekaj chwilę i spróbuj ponownie.',
             primary: {label: 'Strona główna', href: '/', icon: 'home'},
             secondary: {label: 'Odśwież', action: 'reload', icon: 'reload'}
         },
         500: {
             mark: 'wave',
-            margin: 'poprawka nauczyciela',
-            title: 'Coś poszło nie tak',
-            body: 'Serwer się zaciął przy sprawdzaniu. To nie Twoja wina — spróbuj odświeżyć stronę za chwilę.',
+            margin: '',
+            title: 'Błąd serwera',
+            body: 'Wystąpił błąd po stronie serwera. Spróbuj odświeżyć stronę za chwilę.',
             primary: {label: 'Strona główna', href: '/', icon: 'home'},
             secondary: {label: 'Odśwież stronę', action: 'reload', icon: 'reload'}
         }
@@ -69,9 +69,9 @@
     function fallbackCopy(): ErrorCopy {
         return {
             mark: 'x',
-            margin: `błąd ${status || ''}`.trim(),
-            title: 'Wystąpił nieoczekiwany błąd',
-            body: 'Coś poszło nie tak. Spróbuj odświeżyć stronę albo wróć na start.',
+            margin: '',
+            title: 'Wystąpił błąd',
+            body: 'Coś poszło nie tak. Spróbuj odświeżyć stronę albo wróć na stronę główną.',
             primary: {label: 'Strona główna', href: '/', icon: 'home'},
             secondary: {label: 'Odśwież stronę', action: 'reload', icon: 'reload'}
         };
