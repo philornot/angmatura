@@ -137,7 +137,7 @@
 	{#if data.isOwner}
 		<div class="owner-note">
 			{#if data.isFork}
-				<span>To Twoja kopia (fork) innego zestawu.</span>
+				<span>To Twoja kopia innego zestawu.</span>
 			{:else}
 				<span>To oryginalny zestaw.</span>
 			{/if}
@@ -156,7 +156,7 @@
 				>
 					<input type="hidden" name="deviceId" value={deviceId}/>
 					<button type="submit" class="fork-link" disabled={forking}>
-						{forking ? 'Tworzę kopię…' : 'Zamiast tego stwórz kopię (fork)'}
+						{forking ? 'Tworzę kopię…' : 'Zamiast tego stwórz kopię'}
 					</button>
 				</form>
 			{/if}

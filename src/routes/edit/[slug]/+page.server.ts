@@ -2,6 +2,7 @@ import {error, fail, redirect} from '@sveltejs/kit';
 import type {Actions, PageServerLoad} from './$types';
 import {createSet, getSetBySlugOrCustom, isSetOwner, updateSetMeta} from '$lib/server/repo/sets';
 import {getQuestionsForSet, type NewQuestionInput, replaceQuestions} from '$lib/server/repo/questions';
+import {isAdminAuthed} from '$lib/server/adminAuth';
 
 export const load: PageServerLoad = ({params, cookies}) => {
 	const set = getSetBySlugOrCustom(params.slug);
@@ -15,8 +16,14 @@ export const load: PageServerLoad = ({params, cookies}) => {
 	// the original in place instead of always forking.
 	const deviceId = cookies.get('angmatura_device') ?? null;
 	const isOwner = isSetOwner(set, deviceId);
+	// The admin panel's own session cookie (separate from the device-id
+	// "quiet account" system above). A logged-in admin edits any public
+	// set's original in place — that's the whole point of this feature —
+	// so they must skip the auto-fork redirect a regular non-owner visitor
+	// gets below.
+	const isAdmin = isAdminAuthed(cookies);
 
-	if (set.isPublic && !isOwner) {
+	if (set.isPublic && !isOwner && !isAdmin) {
 		// Editing someone else's public set never mutates it in place — it forks
 		// a private copy under a new slug first (spec section 9). The fork is
 		// attributed to the current visitor, so *they* can now edit it in place too.
@@ -45,29 +52,33 @@ export const load: PageServerLoad = ({params, cookies}) => {
 	// anyone else already got auto-forked above, a private set with no
 	// visible owner match is being edited via its private link as before,
 	// and a set that's already a fork doesn't need "make a fork of my fork".
+	// An admin editing someone else's set isn't "the owner" in the quiet-
+	// account sense, so this stays false for them too — they get their own
+	// distinct banner instead (see isAdmin below).
 	const offerFork = isOwner && !isFork;
-	return {set, questions, isOwner, offerFork, isFork, deviceId};
+	return {set, questions, isOwner, offerFork, isFork, isAdmin, deviceId};
 };
 
 export const actions: Actions = {
-	save: async ({ params, request }) => {
+	save: async ({params, request, cookies}) => {
 		const set = getSetBySlugOrCustom(params.slug);
 		if (!set) error(404, 'Nie znaleziono zestawu.');
 
 		const form = await request.formData();
 		const deviceId = String(form.get('deviceId') ?? '').trim() || null;
 
-		// `load()` already keeps a non-owner off the original in the normal
-		// browser flow (it forks and redirects them before this form ever
-		// renders). But `save` is a POST to the same route, and SvelteKit
-		// runs actions independently of `load` — nothing stops a request
-		// from hitting `?/save` directly with an arbitrary slug, bypassing
-		// that redirect entirely. A public set's slug isn't secret (it's
-		// exactly the URL of the publicly listed set), so without this check
-		// anyone could overwrite someone else's original in place. Private
-		// sets keep the existing "the link itself is the authorization"
-		// model — only public sets need the device id to match the owner.
-		if (set.isPublic && !isSetOwner(set, deviceId)) {
+		// `load()` already keeps a non-owner, non-admin visitor off the
+		// original in the normal browser flow (it forks and redirects them
+		// before this form ever renders). But `save` is a POST to the same
+		// route, and SvelteKit runs actions independently of `load` —
+		// nothing stops a request from hitting `?/save` directly with an
+		// arbitrary slug, bypassing that redirect entirely. A public set's
+		// slug isn't secret (it's exactly the URL of the publicly listed
+		// set), so without this check anyone could overwrite someone else's
+		// original in place. Private sets keep the existing "the link
+		// itself is the authorization" model — only public sets need either
+		// a matching device id or an active admin session.
+		if (set.isPublic && !isSetOwner(set, deviceId) && !isAdminAuthed(cookies)) {
 			return fail(403, {message: 'Nie możesz edytować tego zestawu bezpośrednio — zrób jego kopię.'});
 		}
 
