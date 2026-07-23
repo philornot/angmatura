@@ -94,7 +94,6 @@
 			<section class="section" id="section-{type}" data-section-type={type}>
 				<div class="section-head">
 					<h2>{SECTION_TITLES[type]}</h2>
-					<SetTypeBadge {type} />
 				</div>
 				<ul class="set-list">
 					{#each data.groups[type] as set (set.id)}

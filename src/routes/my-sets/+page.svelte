@@ -1,5 +1,4 @@
 <script lang="ts">
-    import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
     import FloatingCreateButton from '$lib/components/FloatingCreateButton.svelte';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
     import type {SetSummary, SetType} from '$lib/types';
@@ -204,7 +203,6 @@
                 <section class="section">
                     <div class="section-head">
                         <h2>{SECTION_TITLES[type]}</h2>
-                        <SetTypeBadge {type}/>
                     </div>
                     <ul class="set-list">
                         {#each groups[type] as set (set.id)}
