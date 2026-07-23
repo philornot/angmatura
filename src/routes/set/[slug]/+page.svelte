@@ -71,7 +71,7 @@
 		</a>
 	</div>
 
-	<button class="edit-link" onclick={goToEdit} type="button">Edytuj / forkuj ten zestaw</button>
+	<button class="edit-link" onclick={goToEdit} type="button">Edytuj / skopiuj ten zestaw</button>
 </div>
 
 <style>
