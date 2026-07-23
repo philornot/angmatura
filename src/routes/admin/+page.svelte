@@ -3,11 +3,20 @@
 	import SetTypeBadge from '$lib/components/SetTypeBadge.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import SectionQuickNav from '$lib/components/SectionQuickNav.svelte';
 	import {Star, Trash2} from '@lucide/svelte';
 	import {zestawForm} from '$lib/polishPlural';
-	import type {SetSummary} from '$lib/types';
+	import type {SetSummary, SetType} from '$lib/types';
 
 	let { data, form } = $props();
+
+	const SECTION_TITLES: Record<SetType, string> = {
+		kwt: 'Key Word Transformations',
+		grammar: 'Gramatykalizacja',
+		translation: 'Tłumaczenia'
+	};
+
+	const ORDER: SetType[] = ['kwt', 'grammar', 'translation'];
 
 	// Local mirror of data.sets so bulk actions can update the list in place
 	// without a full page reload — SvelteKit's `enhance` already does this
@@ -17,6 +26,22 @@
 	$effect(() => {
 		sets = data.authed ? [...data.sets] : [];
 	});
+
+	// Sets grouped by type, in a fixed display order — mirrors the grouping
+	// already used on the public homepage so the admin list reads the same
+	// way. Bulk/select-all logic still operates on the flat `sets` array;
+	// grouping only affects how the list is rendered.
+	let groupedSets = $derived.by(() => {
+		const groups: Record<SetType, SetSummary[]> = {kwt: [], grammar: [], translation: []};
+		for (const set of sets) groups[set.type].push(set);
+		return groups;
+	});
+
+	// Feeds the quick-nav — only the types that currently have sets, in
+	// display order. Nav itself only renders with 2+ sections (see below).
+	let visibleSections = $derived(
+			ORDER.filter((t) => groupedSets[t].length > 0).map((t) => ({type: t, label: SECTION_TITLES[t]}))
+	);
 
 	let selectedIds = $state<Set<number>>(new Set());
 	let selectedCount = $derived(selectedIds.size);
@@ -118,6 +143,10 @@
 </svelte:head>
 
 <div class="container page">
+	{#if data.authed && visibleSections.length > 1}
+		<SectionQuickNav sections={visibleSections}/>
+	{/if}
+
 	<div class="header-row">
 		<h1>Panel administratora</h1>
 		{#if data.authed}
@@ -203,9 +232,16 @@
 			</div>
 		{/if}
 
-		<ul class="set-list">
-			{#each sets as set (set.id)}
-				<li class="set-row card">
+		{#each ORDER as type (type)}
+			{#if groupedSets[type].length > 0}
+				<section class="type-section" id="section-{type}" data-section-type={type}>
+					<div class="section-head">
+						<h2>{SECTION_TITLES[type]}</h2>
+						<span class="section-count mono">{groupedSets[type].length}</span>
+					</div>
+					<ul class="set-list">
+						{#each groupedSets[type] as set (set.id)}
+							<li class="set-row card">
 					<div class="set-info">
 						<label class="checkbox-hit">
 							<input
@@ -272,9 +308,12 @@
 						</button>
 						<Tooltip text="Przytrzymaj Shift podczas klikania „Usuń”, aby pominąć okno potwierdzenia"/>
 					</div>
-				</li>
-			{/each}
-		</ul>
+							</li>
+						{/each}
+					</ul>
+				</section>
+			{/if}
+		{/each}
 	{/if}
 </div>
 
@@ -408,6 +447,31 @@
 		margin: 0;
 		accent-color: var(--accent);
 		cursor: pointer;
+	}
+
+	.type-section {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		scroll-margin-top: 20px;
+	}
+
+	.section-head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.section-head h2 {
+		font-size: 17px;
+	}
+
+	.section-count {
+		font-size: 12px;
+		color: var(--muted);
+		background: var(--surface-soft, #f2f2f2);
+		padding: 2px 8px;
+		border-radius: 999px;
 	}
 
 	.set-list {
