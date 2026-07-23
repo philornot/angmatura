@@ -127,7 +127,7 @@
 	<a href="/set/{set.slug}" class="back"><ArrowLeft size={14} aria-hidden="true" /> {set.title}</a>
 	<div class="title-row">
 		<h1>Edytuj zestaw</h1>
-		{#if data.isOwner}
+		{#if data.isOwner || data.isAdmin}
 			<button type="button" class="btn btn-ghost delete-set-btn" disabled={deleting} onclick={requestDelete}>
 				<Trash2 size={16} aria-hidden="true"/>
 				<span class="delete-set-label">Usuń zestaw</span>
@@ -137,7 +137,7 @@
 	{#if data.isOwner}
 		<div class="owner-note">
 			{#if data.isFork}
-				<span>To Twoja kopia innego zestawu.</span>
+				<span>To Twoja kopia (fork) innego zestawu.</span>
 			{:else}
 				<span>To oryginalny zestaw.</span>
 			{/if}
@@ -156,11 +156,15 @@
 				>
 					<input type="hidden" name="deviceId" value={deviceId}/>
 					<button type="submit" class="fork-link" disabled={forking}>
-						{forking ? 'Tworzę kopię…' : 'Zamiast tego stwórz kopię'}
+						{forking ? 'Tworzę kopię…' : 'Zamiast tego stwórz kopię (fork)'}
 					</button>
 				</form>
 			{/if}
 		</div>
+	{:else if data.isAdmin}
+		<p class="admin-note">
+			Edytujesz oryginalny zestaw jako administrator. Zmiany zapiszą się bezpośrednio, bez tworzenia kopii.
+		</p>
 	{:else}
 		<p class="private-note">To Twoja prywatna kopia. Zmiany nie wpłyną na oryginał.</p>
 	{/if}
@@ -269,6 +273,15 @@
 	.private-note {
 		font-size: 13px;
 		color: var(--muted);
+		margin-bottom: 8px;
+	}
+
+	.admin-note {
+		font-size: 13px;
+		color: var(--accent-ink);
+		background: var(--accent-soft);
+		border-radius: var(--radius-sm);
+		padding: 8px 12px;
 		margin-bottom: 8px;
 	}
 
