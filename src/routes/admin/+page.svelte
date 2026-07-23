@@ -4,7 +4,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import {Star, Trash2} from '@lucide/svelte';
-	import {zestawForm} from '$lib/polishPlural';
+	import {goJeForm, zestawForm} from '$lib/polishPlural';
 	import type {SetSummary} from '$lib/types';
 
 	let { data, form } = $props();
@@ -109,7 +109,7 @@
 			const set = sets.find((s) => s.id === pendingTrashIds![0]);
 			return `Przenieść „${set?.title ?? 'ten zestaw'}” do kosza? Będzie można go przywrócić z kosza przez 30 dni`;
 		}
-		return `Przenieść ${pendingTrashIds.length} ${zestawForm(pendingTrashIds.length)} do kosza? Będzie można go przywrócić z kosza przez 30 dni.`;
+        return `Przenieść ${pendingTrashIds.length} ${zestawForm(pendingTrashIds.length)} do kosza? Będzie można ${goJeForm(pendingTrashIds.length)} przywrócić z kosza przez 30 dni.`;
 	});
 </script>
 
@@ -191,7 +191,7 @@
 								disabled={bulkBusy}
 								onclick={() => runBulkAction('unfeature', [...selectedIds])}
 						>
-							Odznacz wyróżnienie
+                            Odznacz
 						</button>
 						<button type="button" class="btn btn-ghost danger" disabled={bulkBusy}
 						        onclick={requestTrashSelected}>
@@ -259,7 +259,7 @@
 								disabled={!set.isPublic}
 								title={set.isPublic ? '' : 'Najpierw opublikuj zestaw'}
 							>
-								{set.isFeatured ? 'Odznacz wyróżnienie' : 'Wyróżnij'}
+                                {set.isFeatured ? 'Odznacz' : 'Wyróżnij'}
 							</button>
 						</form>
 						<button
@@ -270,7 +270,7 @@
 						>
 							Usuń
 						</button>
-						<Tooltip text="Przytrzymaj Shift podczas klikania „Usuń”, aby pominąć okno potwierdzenia"/>
+                        <Tooltip text="Przytrzymaj Shift podczas klikania „Usuń”, aby pominąć okno potwierdzenia"/>
 					</div>
 				</li>
 			{/each}

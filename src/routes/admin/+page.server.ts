@@ -46,6 +46,34 @@ export const actions: Actions = {
 			return fail(401, { message: 'Nieprawidłowe hasło.' });
 		}
 
+		// The session cookie is marked `Secure` below, so browsers will
+		// *silently* refuse to store it over a plain http:// connection —
+		// no error, no crash, the login just quietly "doesn't stick" on
+		// refresh. This is exactly what happens if someone reaches the app
+		// over its bare LAN IP (or any other http:// address) instead of
+		// the https:// Cloudflare Tunnel hostname — easy to hit from a
+		// phone on the same home network. Catching it here turns that
+		// silent failure into an actual message instead of a dead button.
+		//
+		// Can't use `event.url.protocol` for this check: adapter-node has
+		// no ORIGIN configured (see deploy.config.yaml / ecosystem.config.cjs),
+		// so it only ever sees the plain-http connection cloudflared makes
+		// to localhost — url.protocol would report 'http:' even for
+		// legitimate https:// traffic through the tunnel. Cloudflare always
+		// sets X-Forwarded-Proto to the protocol the *client* actually
+		// used, so that's the header that reflects reality here (same
+		// reasoning as the CF-Connecting-IP fallback in getClientIp above).
+		// A request with neither header at all means cloudflared isn't in
+		// the path — i.e. someone hit the Node process directly over the
+		// LAN, which is also always plain http in this setup.
+		const forwardedProto = request.headers.get('x-forwarded-proto');
+		if (forwardedProto !== 'https') {
+			return fail(400, {
+				message:
+					'To połączenie nie jest szyfrowane (http, nie https). Przeglądarka odrzuci plik cookie sesji. Otwórz panel pod adresem https://angmatura.pl/admin.'
+			});
+		}
+
 		// Successful login: this IP no longer needs to count against the
 		// attempt limit (a legitimate admin logging in repeatedly across
 		// devices shouldn't get locked out).
@@ -55,7 +83,21 @@ export const actions: Actions = {
 		cookies.set(COOKIE_NAME, token, {
 			path: '/',
 			httpOnly: true,
-			sameSite: 'strict',
+			// Explicit rather than relying on SvelteKit's default (which
+			// infers this from event.url's hostname — always true here,
+			// see the forwardedProto check above for why url.protocol
+			// itself can't be trusted). Written out explicitly so it's
+			// obvious this is intentional, not incidental.
+			secure: true,
+			// 'strict' blocks the cookie from being set/sent in some mobile
+			// contexts even though the app is same-site — notably Safari/iOS
+			// and in-app browsers (Messages, WhatsApp, Instagram, etc.) after
+			// certain navigation paths. 'lax' still fully protects this login
+			// endpoint against CSRF (only "safe" cross-site GET requests skip
+			// the Strict-only restriction; the cross-site POST that CSRF would
+			// rely on is still blocked), so this trades no real security for
+			// working mobile logins.
+			sameSite: 'lax',
 			maxAge: 60 * 60 * 24 * 30
 		});
 		return { loggedIn: true };
