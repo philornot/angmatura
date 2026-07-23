@@ -61,7 +61,7 @@ mkdir -p data
 
 if ! command -v pm2 >/dev/null 2>&1; then
 	echo "==> Installing PM2"
-	npm install -g pm2
+	sudo npm install -g pm2
 fi
 
 if ! command -v cloudflared >/dev/null 2>&1; then
