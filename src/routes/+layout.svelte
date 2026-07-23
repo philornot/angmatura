@@ -65,6 +65,12 @@
 	<main>
 		{@render children()}
 	</main>
+
+	<footer class="site-footer">
+		<div class="site-footer-inner container">
+			<a class="footer-link" href="/polityka-prywatnosci">Polityka prywatności</a>
+		</div>
+	</footer>
 </div>
 
 <SecretAdminAccess/>
@@ -126,5 +132,26 @@
 	main {
 		flex: 1;
 		padding-bottom: 48px;
+	}
+
+	.site-footer {
+		border-top: 1px solid var(--rule);
+		padding: 16px 0;
+	}
+
+	.site-footer-inner {
+		display: flex;
+		justify-content: center;
+	}
+
+	.footer-link {
+		font-size: 13px;
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.footer-link:hover {
+		color: var(--ink-soft);
+		text-decoration: underline;
 	}
 </style>
