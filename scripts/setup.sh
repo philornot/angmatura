@@ -29,7 +29,7 @@ fi
 # Raspberry Pi OS often has neither pre-installed.
 if [ "$PKG_RUNNER" = "npm" ] && ! command -v npm >/dev/null 2>&1; then
 	echo "==> npm not found, installing Node.js + npm via apt"
-	sudo apt-get update
+	sudo apt-get update || echo "!! apt-get update had errors (maybe a broken third-party repo) — continuing anyway"
 	sudo apt-get install -y nodejs npm
 	if ! command -v npm >/dev/null 2>&1; then
 		echo "!! Still no npm after apt install. Install Node.js manually, then re-run this script:"
